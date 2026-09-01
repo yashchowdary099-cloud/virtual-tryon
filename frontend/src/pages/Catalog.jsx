@@ -182,7 +182,7 @@ export default function Catalog() {
               className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold whitespace-nowrap transition-all ${
                 selectedGender === tab.key
                   ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                  : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-white shadow-sm'
               }`}
             >
               {tab.label}
@@ -192,16 +192,16 @@ export default function Catalog() {
 
         {/* Brand Selector & Search */}
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs">
-            <Filter className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="text-slate-400 font-semibold">Brand:</span>
+          <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs shadow-sm">
+            <Filter className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
+            <span className="text-slate-500 dark:text-slate-400 font-semibold">Brand:</span>
             <select
               value={selectedBrand}
               onChange={(e) => setSelectedBrand(e.target.value)}
-              className="bg-transparent text-white font-bold focus:outline-none cursor-pointer"
+              className="bg-transparent text-slate-900 dark:text-white font-bold focus:outline-none cursor-pointer"
             >
               {brands.map(b => (
-                <option key={b} value={b} className="bg-slate-900 text-white">{b}</option>
+                <option key={b} value={b} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{b}</option>
               ))}
             </select>
           </div>
@@ -213,18 +213,18 @@ export default function Catalog() {
               placeholder="Search Allen Solly, Mufti, Zara..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 shadow-sm"
             />
           </form>
 
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="bg-slate-900 border border-slate-800 text-slate-300 text-xs font-semibold rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500 shadow-sm cursor-pointer"
           >
-            <option value="featured">Featured</option>
-            <option value="price-low">Price: Low to High</option>
-            <option value="price-high">Price: High to Low</option>
+            <option value="featured" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Featured</option>
+            <option value="price-low" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Price: Low to High</option>
+            <option value="price-high" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Price: High to Low</option>
           </select>
         </div>
       </div>

@@ -3,16 +3,16 @@
 const API_BASE_URL = 'http://localhost:5000/api/auth';
 
 /**
- * Sends OTP to a 10-digit mobile number.
+ * Sends a 6-digit verification OTP to the specified email address via Resend.
  */
-export async function sendOtp(phoneNumber) {
+export async function sendOtp(email) {
   try {
     const response = await fetch(`${API_BASE_URL}/send-otp`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ phoneNumber })
+      body: JSON.stringify({ email })
     });
 
     const data = await response.json();
@@ -21,22 +21,22 @@ export async function sendOtp(phoneNumber) {
     console.error('API Error sendOtp:', error);
     return {
       success: false,
-      message: 'Failed to connect to the authentication server.'
+      message: 'Failed to connect to the authentication server. Please check your network connection.'
     };
   }
 }
 
 /**
- * Verifies OTP for the mobile number.
+ * Verifies the 6-digit OTP code for the user's email address.
  */
-export async function verifyOtp(phoneNumber, otp) {
+export async function verifyOtp(email, otp) {
   try {
     const response = await fetch(`${API_BASE_URL}/verify-otp`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ phoneNumber, otp })
+      body: JSON.stringify({ email, otp })
     });
 
     const data = await response.json();

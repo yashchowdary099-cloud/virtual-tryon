@@ -16,7 +16,7 @@ export default function ProgressStepper({ activeStep }) {
       <div className="relative flex items-center justify-between">
         
         {/* Background Connector Bar */}
-        <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-slate-800 -translate-y-1/2 z-0" />
+        <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-slate-200 dark:bg-slate-800 -translate-y-1/2 z-0" />
         
         {/* Active Connector Progress */}
         <div
@@ -37,7 +37,7 @@ export default function ProgressStepper({ activeStep }) {
                     ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/40 ring-2 ring-indigo-500'
                     : isCurrent
                     ? 'bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 text-white shadow-xl shadow-indigo-500/50 ring-4 ring-indigo-500/20 scale-110'
-                    : 'bg-slate-900 text-slate-500 border border-slate-800'
+                    : 'bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-800 shadow-sm'
                 }`}
               >
                 {isCompleted ? <Check className="w-5 h-5" /> : <Icon className="w-4 h-4" />}
@@ -46,10 +46,10 @@ export default function ProgressStepper({ activeStep }) {
               <span
                 className={`mt-2 text-xs font-semibold tracking-tight transition-colors duration-200 hidden sm:block ${
                   isCurrent
-                    ? 'text-indigo-400 font-bold'
+                    ? 'text-indigo-600 dark:text-indigo-400 font-bold'
                     : isCompleted
-                    ? 'text-slate-300'
-                    : 'text-slate-500'
+                    ? 'text-slate-800 dark:text-slate-300'
+                    : 'text-slate-400 dark:text-slate-500'
                 }`}
               >
                 {step.label}

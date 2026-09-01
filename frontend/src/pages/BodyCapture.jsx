@@ -118,19 +118,19 @@ export default function BodyCapture() {
       <ProgressStepper activeStep={2} />
 
       {/* CM Measurements & Size Header Bar */}
-      <div className="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white/90 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+          <div className="w-10 h-10 rounded-xl bg-indigo-600/10 dark:bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
             <Ruler className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h4 className="text-sm font-bold text-white">Body Measurements (CM) & Sizing</h4>
-              <span className="bg-emerald-500/10 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-500/20">
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">Body Measurements (CM) & Sizing</h4>
+              <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-500/20">
                 Chest {userMeasurements?.chestCm || 108} cm ➔ Size {userMeasurements?.userSize || 'L'}
               </span>
             </div>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               Shoulders: {userMeasurements?.shoulderCm || 46} cm | Waist: {userMeasurements?.waistCm || 92} cm | Height: {userMeasurements?.heightCm || 178} cm
             </p>
           </div>
@@ -138,7 +138,7 @@ export default function BodyCapture() {
 
         <button
           onClick={() => setShowCmModal(!showCmModal)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-600/30 font-bold text-xs"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-600/20 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 hover:bg-indigo-100 dark:hover:bg-indigo-600/30 font-bold text-xs shadow-sm"
         >
           <Ruler className="w-4 h-4" /> {showCmModal ? 'Hide CM Form' : '✏️ Edit Measurements in CM'}
         </button>
@@ -155,21 +155,21 @@ export default function BodyCapture() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
         {/* Left Col: Camera & Viewfinder (7 cols) */}
-        <div className="lg:col-span-7 glass-panel p-5 rounded-3xl border border-slate-800 bg-slate-900/80">
+        <div className="lg:col-span-7 glass-panel p-5 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/80 shadow-xl">
           
           <div className="flex items-center justify-between mb-4">
             <div>
-              <span className="text-xs font-bold text-indigo-400 uppercase tracking-widest">
+              <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">
                 Angle {currentAngleIndex + 1} of 4
               </span>
-              <h2 className="text-xl font-black text-white">{currentAngle.label}</h2>
+              <h2 className="text-xl font-black text-slate-900 dark:text-white">{currentAngle.label}</h2>
             </div>
 
-            <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+            <div className="flex items-center bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
               <button
                 onClick={() => setUseWebcam(true)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all ${
-                  useWebcam ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                  useWebcam ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 <Camera className="w-3.5 h-3.5" /> Webcam
@@ -177,7 +177,7 @@ export default function BodyCapture() {
               <button
                 onClick={() => setUseWebcam(false)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all ${
-                  !useWebcam ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                  !useWebcam ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 <Upload className="w-3.5 h-3.5" /> Upload File
@@ -186,7 +186,7 @@ export default function BodyCapture() {
           </div>
 
           {/* Viewfinder */}
-          <div className="relative aspect-[3/4] max-h-[480px] w-full rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 flex items-center justify-center">
+          <div className="relative aspect-[3/4] max-h-[480px] w-full rounded-2xl overflow-hidden bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-center">
             {useWebcam && !cameraError ? (
               <div className="relative w-full h-full">
                 <Webcam
@@ -231,7 +231,7 @@ export default function BodyCapture() {
           <div className="mt-5 flex items-center justify-between gap-3">
             <button
               onClick={createMockPhoto}
-              className="px-4 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700"
+              className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold border border-slate-200 dark:border-slate-700"
             >
               ⚡ Auto Sim Capture
             </button>
@@ -252,8 +252,8 @@ export default function BodyCapture() {
         <div className="lg:col-span-5 flex flex-col justify-between h-full">
           <div>
             <div className="mb-4">
-              <h3 className="text-lg font-bold text-white">Your Captured Pose Angles</h3>
-              <p className="text-xs text-slate-400">All 4 angles will be used to drape your garment ON your photo.</p>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Your Captured Pose Angles</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">All 4 angles will be used to drape your garment ON your photo.</p>
             </div>
 
             <div className="grid grid-cols-2 gap-3 mb-6">
@@ -267,24 +267,24 @@ export default function BodyCapture() {
                     onClick={() => setCurrentAngleIndex(idx)}
                     className={`relative rounded-2xl p-3 border transition-all duration-200 cursor-pointer ${
                       isActive
-                        ? 'bg-slate-900 border-indigo-500 ring-2 ring-indigo-500/30'
-                        : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+                        ? 'bg-white dark:bg-slate-900 border-indigo-500 ring-2 ring-indigo-500/30 shadow-md'
+                        : 'bg-white/80 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-slate-200">{ang.label}</span>
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{ang.label}</span>
                       {img ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 fill-emerald-950" />
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500 fill-emerald-100 dark:fill-emerald-950" />
                       ) : (
-                        <span className="w-2 h-2 rounded-full bg-slate-700" />
+                        <span className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700" />
                       )}
                     </div>
 
-                    <div className="aspect-[4/5] rounded-xl overflow-hidden bg-slate-950 border border-slate-800 flex items-center justify-center relative">
+                    <div className="aspect-[4/5] rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-center relative">
                       {img ? (
                         <img src={img} alt={ang.label} className="w-full h-full object-cover" />
                       ) : (
-                        <span className="text-[11px] font-semibold text-slate-600">Pending</span>
+                        <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-600">Pending</span>
                       )}
                     </div>
                   </div>
@@ -294,13 +294,13 @@ export default function BodyCapture() {
           </div>
 
           {/* Bottom Submit CTA */}
-          <div className="glass-panel p-5 rounded-2xl border border-slate-800 bg-slate-900/90">
-            <div className="flex items-center justify-between text-xs text-slate-400 mb-3">
+          <div className="glass-panel p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 shadow-xl">
+            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-3">
               <span>Capture Progress:</span>
-              <span className="font-bold text-indigo-400">{totalCaptured} / 4 Done</span>
+              <span className="font-bold text-indigo-600 dark:text-indigo-400">{totalCaptured} / 4 Done</span>
             </div>
 
-            <div className="w-full h-2 bg-slate-950 rounded-full overflow-hidden mb-4 border border-slate-800">
+            <div className="w-full h-2 bg-slate-100 dark:bg-slate-950 rounded-full overflow-hidden mb-4 border border-slate-200 dark:border-slate-800">
               <div
                 className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300"
                 style={{ width: `${(totalCaptured / 4) * 100}%` }}
@@ -313,7 +313,7 @@ export default function BodyCapture() {
               className={`w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl font-extrabold text-sm transition-all duration-300 ${
                 isAllCaptured
                   ? 'bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600 text-white shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 active:scale-[0.98]'
-                  : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                  : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-300 dark:border-slate-700'
               }`}
             >
               <Sparkles className="w-4 h-4" />

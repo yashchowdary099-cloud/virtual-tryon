@@ -80,16 +80,16 @@ export default function FitResult() {
       <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-bold uppercase tracking-widest">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-300 text-xs font-bold uppercase tracking-widest">
               <Sparkles className="w-3.5 h-3.5" />
               Clothing Draped on Your Photo
             </span>
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-bold">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Chest {userMeasurements?.chestCm || 108} cm (Size {selectedSize})
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-600 dark:text-indigo-300 text-xs font-bold">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Chest {userMeasurements?.chestCm || 108} cm (Size {selectedSize})
             </span>
           </div>
 
-          <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
+          <h1 className="text-2xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
             Garment Draped on Your Uploaded Photo
           </h1>
         </div>
@@ -97,14 +97,14 @@ export default function FitResult() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setShowCmModal(!showCmModal)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-600/30 text-xs font-bold"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-600/20 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 hover:bg-indigo-100 dark:hover:bg-indigo-600/30 text-xs font-bold shadow-sm"
           >
             <Ruler className="w-4 h-4" /> {showCmModal ? 'Hide CM Form' : '✏️ Recalculate CM Metrics'}
           </button>
 
           <button
             onClick={() => navigate('/capture')}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-xs font-bold"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-xs font-bold shadow-sm"
           >
             <RotateCcw className="w-4 h-4" /> Retake Photo
           </button>
@@ -137,29 +137,29 @@ export default function FitResult() {
           <FitScoreBadge score={currentFitData.score} recommendedSize={selectedSize} />
 
           {/* Garment Details & Verified Size Selector */}
-          <div className="glass-panel p-6 rounded-2xl border border-slate-800 bg-slate-900/80">
-            <div className="flex items-start gap-4 mb-4 pb-4 border-b border-slate-800">
+          <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/80 shadow-xl">
+            <div className="flex items-start gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-slate-800">
               <img
                 src={fallbackProduct.image}
                 alt={fallbackProduct.name}
-                className="w-16 h-20 object-cover rounded-xl border border-slate-800"
+                className="w-16 h-20 object-cover rounded-xl border border-slate-200 dark:border-slate-800"
               />
               <div>
-                <span className="text-xs font-bold uppercase text-indigo-400 tracking-wider">Target Garment</span>
-                <h3 className="text-lg font-bold text-white leading-tight">{fallbackProduct.name}</h3>
-                <p className="text-sm font-extrabold text-indigo-300 mt-1">₹{fallbackProduct.price?.toLocaleString('en-IN')}</p>
-                <p className="text-xs text-slate-400">{fallbackProduct.fabric}</p>
+                <span className="text-xs font-bold uppercase text-indigo-600 dark:text-indigo-400 tracking-wider">Target Garment</span>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-tight">{fallbackProduct.name}</h3>
+                <p className="text-sm font-extrabold text-indigo-600 dark:text-indigo-300 mt-1">₹{fallbackProduct.price?.toLocaleString('en-IN')}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{fallbackProduct.fabric}</p>
               </div>
             </div>
 
             {/* Size Selector */}
             <div className="mb-6">
               <div className="flex items-center justify-between text-xs font-bold mb-3">
-                <span className="text-slate-300 flex items-center gap-1.5">
-                  <Ruler className="w-4 h-4 text-indigo-400" />
+                <span className="text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <Ruler className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
                   Select Size (Calculated from {userMeasurements?.chestCm || 108} cm Chest)
                 </span>
-                <span className="text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded border border-emerald-500/20 font-bold">
+                <span className="text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-500/20 font-bold">
                   {currentFitData.category} ({currentFitData.score}%)
                 </span>
               </div>
@@ -176,12 +176,12 @@ export default function FitResult() {
                       className={`relative py-3 rounded-xl font-extrabold text-sm border transition-all duration-200 ${
                         isSelected
                           ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/40 ring-2 ring-indigo-500/30'
-                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-white'
+                          : 'bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-700 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
                       {sz}
                       {isCalculatedSize && (
-                        <span className="absolute -top-2 -right-1 bg-emerald-400 text-slate-950 text-[9px] font-black px-1 rounded-full ring-2 ring-slate-900">
+                        <span className="absolute -top-2 -right-1 bg-emerald-500 text-white dark:text-slate-950 text-[9px] font-black px-1.5 rounded-full ring-2 ring-white dark:ring-slate-900">
                           {userMeasurements?.chestCm || 108}cm
                         </span>
                       )}
@@ -192,27 +192,27 @@ export default function FitResult() {
             </div>
 
             {/* Body Measurement Fit Breakdown */}
-            <div className="mb-6 space-y-2 bg-slate-950/80 p-4 rounded-xl border border-slate-800 text-xs">
-              <div className="flex justify-between items-center mb-2 pb-2 border-b border-slate-800">
-                <h4 className="font-bold text-slate-300 uppercase tracking-wider">CM Measurements Breakdown</h4>
-                <span className="text-emerald-400 font-bold">{currentFitData.label}</span>
+            <div className="mb-6 space-y-2 bg-slate-50 dark:bg-slate-950/80 p-4 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
+              <div className="flex justify-between items-center mb-2 pb-2 border-b border-slate-200 dark:border-slate-800">
+                <h4 className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">CM Measurements Breakdown</h4>
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold">{currentFitData.label}</span>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <div className="flex justify-between p-2 rounded-lg bg-slate-900 text-slate-400">
+                <div className="flex justify-between p-2 rounded-lg bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 shadow-sm">
                   <span>Chest ({userMeasurements?.chestCm || 108} cm):</span>
-                  <span className="font-bold text-indigo-400">{selectedSize === 'L' ? '96% Tailored' : selectedSize === 'S' ? '62% Constricted' : '84% Standard'}</span>
+                  <span className="font-bold text-indigo-600 dark:text-indigo-400">{selectedSize === 'L' ? '96% Tailored' : selectedSize === 'S' ? '62% Constricted' : '84% Standard'}</span>
                 </div>
-                <div className="flex justify-between p-2 rounded-lg bg-slate-900 text-slate-400">
+                <div className="flex justify-between p-2 rounded-lg bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 shadow-sm">
                   <span>Shoulders ({userMeasurements?.shoulderCm || 46} cm):</span>
-                  <span className="font-bold text-indigo-400">{selectedSize === 'L' ? '95% Ideal' : selectedSize === 'S' ? '60% Tight' : '86% Good'}</span>
+                  <span className="font-bold text-indigo-600 dark:text-indigo-400">{selectedSize === 'L' ? '95% Ideal' : selectedSize === 'S' ? '60% Tight' : '86% Good'}</span>
                 </div>
-                <div className="flex justify-between p-2 rounded-lg bg-slate-900 text-slate-400">
+                <div className="flex justify-between p-2 rounded-lg bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 shadow-sm">
                   <span>Waist ({userMeasurements?.waistCm || 92} cm):</span>
-                  <span className="font-bold text-indigo-400">{selectedSize === 'L' ? '94% Snug' : '82% Loose'}</span>
+                  <span className="font-bold text-indigo-600 dark:text-indigo-400">{selectedSize === 'L' ? '94% Snug' : '82% Loose'}</span>
                 </div>
-                <div className="flex justify-between p-2 rounded-lg bg-slate-900 text-slate-400">
+                <div className="flex justify-between p-2 rounded-lg bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 shadow-sm">
                   <span>Height ({userMeasurements?.heightCm || 178} cm):</span>
-                  <span className="font-bold text-indigo-400">Optimal Drop</span>
+                  <span className="font-bold text-indigo-600 dark:text-indigo-400">Optimal Drop</span>
                 </div>
               </div>
             </div>

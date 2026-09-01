@@ -1,8 +1,8 @@
 // FILE: frontend/src/pages/Login.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Key, Phone, Sparkles, AlertCircle, CheckCircle2, Lock, ArrowRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Key, Mail, Sparkles, AlertCircle, CheckCircle2, Lock, ArrowRight, RotateCw, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { sendOtp, verifyOtp } from '../api/auth';
 
@@ -11,41 +11,85 @@ export default function Login() {
   const location = useLocation();
   const { login } = useAuth();
 
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
-  const [step, setStep] = useState(1); // 1 = Phone Input, 2 = OTP Input
+  const [step, setStep] = useState(1); // 1 = Email Input, 2 = OTP Input
   const [loading, setLoading] = useState(false);
-  const [demoOtp, setDemoOtp] = useState('');
+  const [resending, setResending] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
   const redirectPath = location.state?.from || '/';
 
+  // Countdown timer for Resend OTP cooldown
+  useEffect(() => {
+    let timer;
+    if (cooldown > 0) {
+      timer = setInterval(() => {
+        setCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [cooldown]);
+
+  const isValidEmailFormat = (val) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim());
+  };
+
   const handleSendOtp = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
 
-    if (!phoneNumber || !/^\d{10}$/.test(phoneNumber)) {
-      setErrorMsg('Please enter a valid 10-digit mobile number.');
+    if (!email || !isValidEmailFormat(email)) {
+      setErrorMsg('Please enter a valid email address (e.g. yourname@gmail.com).');
       return;
     }
 
     try {
       setLoading(true);
-      const res = await sendOtp(phoneNumber);
+      const res = await sendOtp(email.trim());
       setLoading(false);
 
       if (res.success) {
-        setDemoOtp(res.demoOtp);
         setStep(2);
-        setSuccessMsg('OTP code sent successfully!');
+        setCooldown(res.cooldownSeconds || 60);
+        setSuccessMsg(res.message || `Verification code sent to ${email.trim()}! Please check your inbox.`);
       } else {
-        setErrorMsg(res.message || 'Failed to send OTP. Please try again.');
+        if (res.retryAfterSeconds) {
+          setCooldown(res.retryAfterSeconds);
+        }
+        setErrorMsg(res.message || 'Failed to send verification email. Please try again.');
       }
     } catch (err) {
       setLoading(false);
       setErrorMsg('Network error. Failed to reach the authentication server.');
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (cooldown > 0 || resending) return;
+    setErrorMsg('');
+    setSuccessMsg('');
+
+    try {
+      setResending(true);
+      const res = await sendOtp(email.trim());
+      setResending(false);
+
+      if (res.success) {
+        setCooldown(res.cooldownSeconds || 60);
+        setSuccessMsg(`New verification code sent to ${email.trim()}!`);
+      } else {
+        if (res.retryAfterSeconds) {
+          setCooldown(res.retryAfterSeconds);
+        }
+        setErrorMsg(res.message || 'Could not resend OTP at this moment.');
+      }
+    } catch (err) {
+      setResending(false);
+      setErrorMsg('Network error while resending verification code.');
     }
   };
 
@@ -54,29 +98,30 @@ export default function Login() {
     setErrorMsg('');
     setSuccessMsg('');
 
-    if (!otp || !/^\d{4}$/.test(otp)) {
-      setErrorMsg('Please enter the 4-digit verification code.');
+    const cleanOtp = otp.trim();
+    if (!cleanOtp || !/^\d{6}$/.test(cleanOtp)) {
+      setErrorMsg('Please enter the complete 6-digit verification code.');
       return;
     }
 
     try {
       setLoading(true);
-      const res = await verifyOtp(phoneNumber, otp);
+      const res = await verifyOtp(email.trim(), cleanOtp);
       setLoading(false);
 
       if (res.success) {
         login(res.user, res.token);
-        setSuccessMsg('Verification successful! Logging in...');
+        setSuccessMsg('Verification successful! Welcome to SFit...');
         
         setTimeout(() => {
           navigate(redirectPath, { replace: true });
         }, 800);
       } else {
-        setErrorMsg(res.message || 'Incorrect OTP code. Please try again.');
+        setErrorMsg(res.message || 'Invalid or expired verification code.');
       }
     } catch (err) {
       setLoading(false);
-      setErrorMsg('Network error. Failed to reach the verification server.');
+      setErrorMsg('Network error. Failed to connect to the verification server.');
     }
   };
 
@@ -87,7 +132,7 @@ export default function Login() {
         animate={{ opacity: 1, y: 0 }}
         className="glass-panel p-8 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 shadow-2xl relative overflow-hidden"
       >
-        {/* Background glow effects */}
+        {/* Background ambient glow effect */}
         <div className="absolute top-0 right-0 -translate-y-12 translate-x-12 w-48 h-48 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
 
         {/* Brand Header */}
@@ -96,120 +141,157 @@ export default function Login() {
             <Lock className="w-6 h-6 animate-pulse" />
           </div>
           <h2 className="font-brand text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center justify-center gap-1.5">
-            SFit <span className="bg-gradient-to-r from-indigo-600 to-pink-500 dark:from-indigo-400 dark:to-pink-400 bg-clip-text text-transparent">Login Gateway</span>
+            SFit <span className="bg-gradient-to-r from-indigo-600 to-pink-500 dark:from-indigo-400 dark:to-pink-400 bg-clip-text text-transparent">Email Login</span>
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Authenticate to save measurements, bags & check out securely.
+            Sign in with email OTP to access your bag, measurements & 3D AI try-ons.
           </p>
         </div>
 
-        {/* Errors / Success displays */}
-        {errorMsg && (
-          <div className="mb-6 p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-xs text-rose-600 dark:text-rose-400 flex items-start gap-2.5">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-            <span>{errorMsg}</span>
-          </div>
-        )}
+        {/* Dynamic Alerts */}
+        <AnimatePresence mode="wait">
+          {errorMsg && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mb-6 p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-xs text-rose-600 dark:text-rose-400 flex items-start gap-2.5 shadow-sm"
+            >
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span className="leading-relaxed">{errorMsg}</span>
+            </motion.div>
+          )}
 
-        {successMsg && (
-          <div className="mb-6 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-600 dark:text-emerald-400 flex items-start gap-2.5">
-            <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
-            <span>{successMsg}</span>
-          </div>
-        )}
+          {successMsg && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mb-6 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-600 dark:text-emerald-400 flex items-start gap-2.5 shadow-sm"
+            >
+              <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+              <span className="leading-relaxed">{successMsg}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {/* Form Body */}
+        {/* Step 1: Email Input Form */}
         {step === 1 ? (
-          // STEP 1: Phone Input
           <form onSubmit={handleSendOtp} className="space-y-6">
             <div>
-              <label htmlFor="phone" className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-                Enter Mobile Number
+              <label htmlFor="email" className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                Enter Gmail / Email Address
               </label>
               <div className="relative flex items-center bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus-within:border-indigo-500/60 transition-all">
-                <Phone className="w-4 h-4 text-slate-400 absolute left-4" />
-                <span className="text-slate-500 text-xs font-bold pl-11 pr-1 border-r border-slate-200 dark:border-slate-800 shrink-0">
-                  +91
-                </span>
+                <Mail className="w-4 h-4 text-slate-400 absolute left-4" />
                 <input
-                  id="phone"
-                  type="tel"
-                  placeholder="98765 43210"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').substring(0, 10))}
-                  className="w-full bg-transparent pl-3 pr-4 py-3.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none"
+                  id="email"
+                  type="email"
+                  placeholder="yourname@gmail.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full bg-transparent pl-11 pr-4 py-3.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none font-medium"
                   disabled={loading}
+                  autoComplete="email"
+                  required
                 />
               </div>
             </div>
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !email.trim()}
               className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black text-xs shadow-xl shadow-indigo-600/30 hover:shadow-indigo-600/50 active:scale-[0.98] transition-all disabled:opacity-50"
             >
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Generating OTP...
+                  Sending Verification Code via Resend...
                 </>
               ) : (
                 <>
-                  Send OTP Code
+                  Send 6-Digit OTP Code
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
           </form>
         ) : (
-          // STEP 2: OTP Input
+          /* Step 2: 6-Digit OTP Verification Form */
           <form onSubmit={handleVerifyOtp} className="space-y-6">
-            {/* Demo Mode helper code box */}
-            <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 flex items-start gap-3 shadow-sm">
-              <Sparkles className="w-5 h-5 shrink-0 mt-0.5 animate-pulse text-amber-500" />
-              <div>
-                <h4 className="text-xs font-black uppercase tracking-wider">Demo Mode Active</h4>
-                <p className="text-[11px] mt-1 leading-relaxed">
-                  Your simulated OTP code is <strong className="text-amber-600 dark:text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/20">{demoOtp}</strong>. 
-                  Enter it below to complete verification.
-                </p>
-              </div>
+            <div className="p-3.5 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
+              <span className="truncate max-w-[200px] font-semibold text-slate-900 dark:text-slate-200">
+                {email}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setStep(1);
+                  setOtp('');
+                  setErrorMsg('');
+                  setSuccessMsg('');
+                }}
+                className="text-indigo-600 dark:text-indigo-400 hover:underline font-bold text-[11px] flex items-center gap-1"
+              >
+                <ArrowLeft className="w-3 h-3" /> Change
+              </button>
             </div>
 
             <div>
               <label htmlFor="otp" className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-                Enter Verification Code (4 Digits)
+                Enter 6-Digit OTP Code
               </label>
               <div className="relative flex items-center bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus-within:border-indigo-500/60 transition-all">
                 <Key className="w-4 h-4 text-slate-400 absolute left-4" />
                 <input
                   id="otp"
                   type="text"
-                  placeholder="Enter 4-digit code"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  placeholder="123456"
                   value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').substring(0, 4))}
-                  className="w-full bg-transparent pl-11 pr-4 py-3.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none font-bold tracking-[0.25em]"
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').substring(0, 6))}
+                  className="w-full bg-transparent pl-11 pr-4 py-3.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none font-black tracking-[0.4em] text-center"
                   disabled={loading}
+                  autoComplete="one-time-code"
+                  autoFocus
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <button
+              type="submit"
+              disabled={loading || otp.trim().length !== 6}
+              className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black text-xs shadow-xl shadow-indigo-600/30 hover:shadow-indigo-600/50 transition-all active:scale-[0.98] disabled:opacity-50"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Verifying Code...
+                </>
+              ) : (
+                <>
+                  Verify & Log In
+                  <Sparkles className="w-4 h-4" />
+                </>
+              )}
+            </button>
+
+            {/* Resend OTP Button with Cooldown Countdown */}
+            <div className="text-center pt-2">
               <button
                 type="button"
-                onClick={() => { setStep(1); setErrorMsg(''); setSuccessMsg(''); }}
-                className="py-3.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
-                disabled={loading}
+                onClick={handleResendOtp}
+                disabled={cooldown > 0 || resending}
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 disabled:opacity-50 disabled:hover:text-slate-500 transition-colors"
               >
-                Back
-              </button>
-              
-              <button
-                type="submit"
-                disabled={loading}
-                className="py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 text-white font-black text-xs shadow-xl shadow-indigo-600/30 hover:shadow-indigo-600/50 transition-all active:scale-[0.98]"
-              >
-                {loading ? 'Verifying...' : 'Verify & Log In'}
+                <RotateCw className={`w-3.5 h-3.5 ${resending ? 'animate-spin' : ''}`} />
+                {cooldown > 0 ? (
+                  <span>Resend OTP in <strong className="text-indigo-500">{cooldown}s</strong></span>
+                ) : (
+                  <span>Didn't get code? <strong className="text-indigo-600 dark:text-indigo-400 underline">Resend OTP</strong></span>
+                )}
               </button>
             </div>
           </form>
@@ -219,7 +301,6 @@ export default function Login() {
   );
 }
 
-// Simple loader icon component helper
 function Loader2({ className }) {
   return (
     <svg

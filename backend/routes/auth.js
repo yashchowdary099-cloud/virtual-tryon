@@ -3,14 +3,44 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
+const { Resend } = require('resend');
 require('dotenv').config();
 
 const USERS_FILE_PATH = path.join(__dirname, '../data/users.json');
 
-// Temporary in-memory store for OTPs: phone -> { otp, expiresAt }
+// In-memory OTP storage: email (lowercase) -> { hashedOtp, expiresAt, attempts }
 const otpStore = new Map();
 
-// Helper to load users from users.json
+// In-memory Rate Limit tracking: email (lowercase) -> { lastRequestedAt, requestCount, windowStart }
+const rateLimitStore = new Map();
+
+// Configuration Constants
+const OTP_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
+const RESEND_COOLDOWN_MS = 60 * 1000; // 60 seconds between resend requests
+const MAX_REQUESTS_PER_WINDOW = 5; // Max 5 requests per 15-minute window
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const MAX_VERIFICATION_ATTEMPTS = 4; // Max 4 wrong attempts before invalidating OTP
+
+/**
+ * Helper to validate email format
+ */
+function isValidEmail(email) {
+  if (!email || typeof email !== 'string') return false;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email.trim());
+}
+
+/**
+ * Helper to generate a secure hash of the OTP bound to the user's email
+ */
+function hashOtp(otp, email) {
+  return crypto.createHash('sha256').update(`${otp}:${email.toLowerCase().trim()}`).digest('hex');
+}
+
+/**
+ * Helper to load users from users.json
+ */
 function loadUsers() {
   try {
     if (!fs.existsSync(USERS_FILE_PATH)) {
@@ -21,176 +51,325 @@ function loadUsers() {
     const data = fs.readFileSync(USERS_FILE_PATH, 'utf8');
     return JSON.parse(data || '[]');
   } catch (error) {
-    console.error('Error loading users:', error);
+    console.error('[SFit Auth] Error loading users:', error);
     return [];
   }
 }
 
-// Helper to save users to users.json
+/**
+ * Helper to save users to users.json
+ */
 function saveUsers(users) {
   try {
     fs.writeFileSync(USERS_FILE_PATH, JSON.stringify(users, null, 2));
   } catch (error) {
-    console.error('Error saving users:', error);
+    console.error('[SFit Auth] Error saving users:', error);
   }
 }
 
 /**
- * Helper function to send real SMS via Twilio API using native fetch
+ * Helper to initialize and get Resend client
  */
-async function sendRealSmsViaTwilio(phoneNumber, otpCode) {
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
-  const twilioPhone = process.env.TWILIO_PHONE_NUMBER;
-
-  if (!accountSid || !authToken || !twilioPhone || 
-      accountSid.includes('your_twilio') || authToken.includes('your_twilio')) {
-    throw new Error('Twilio credentials are not configured in backend/.env. Please configure TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER.');
+function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey || apiKey.trim() === '' || apiKey.includes('your_resend')) {
+    return null;
   }
+  return new Resend(apiKey.trim());
+}
 
-  // Format recipient phone number with Indian country code (+91)
-  const formattedTo = `+91${phoneNumber}`;
-  const messageBody = `Your SFit login verification code is ${otpCode}. Valid for 5 minutes.`;
+/**
+ * Generates beautiful HTML email template for the OTP
+ */
+function generateOtpEmailHtml(otpCode, email) {
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Your SFit Verification Code</title>
+      </head>
+      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #030712; color: #f3f4f6;">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #030712; padding: 40px 20px;">
+          <tr>
+            <td align="center">
+              <table width="100%" max-width="500" style="max-width: 500px; background-color: #0f172a; border-radius: 16px; border: 1px solid #1e293b; overflow: hidden; padding: 32px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);">
+                
+                <!-- Logo & Brand Header -->
+                <tr>
+                  <td align="center" style="padding-bottom: 24px;">
+                    <div style="display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%); padding: 10px 18px; border-radius: 12px; font-weight: 900; font-size: 20px; color: #ffffff; letter-spacing: -0.5px;">
+                      SFit
+                    </div>
+                    <div style="font-size: 11px; font-weight: 700; color: #818cf8; text-transform: uppercase; letter-spacing: 2px; margin-top: 8px;">
+                      3D AI Virtual Try-On
+                    </div>
+                  </td>
+                </tr>
 
-  console.log(`[Twilio SMS] Sending OTP to ${formattedTo}...`);
+                <!-- Heading -->
+                <tr>
+                  <td align="center" style="padding-bottom: 12px;">
+                    <h1 style="margin: 0; font-size: 22px; font-weight: 800; color: #ffffff;">
+                      Verification Code
+                    </h1>
+                  </td>
+                </tr>
 
-  const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
-  const authHeader = 'Basic ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64');
+                <!-- Description -->
+                <tr>
+                  <td align="center" style="padding-bottom: 24px;">
+                    <p style="margin: 0; font-size: 14px; color: #94a3b8; line-height: 1.6;">
+                      Use the 6-digit code below to log in to your <strong>SFit</strong> account for <span style="color: #cbd5e1;">${email}</span>.
+                    </p>
+                  </td>
+                </tr>
 
-  const params = new URLSearchParams();
-  params.append('To', formattedTo);
-  params.append('From', twilioPhone);
-  params.append('Body', messageBody);
+                <!-- OTP Code Box -->
+                <tr>
+                  <td align="center" style="padding-bottom: 24px;">
+                    <div style="background-color: #020617; border: 2px solid #6366f1; border-radius: 12px; padding: 18px 24px; display: inline-block; letter-spacing: 8px; font-size: 32px; font-weight: 900; color: #38bdf8; font-family: 'Courier New', Courier, monospace;">
+                      ${otpCode}
+                    </div>
+                  </td>
+                </tr>
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Authorization': authHeader,
-      'Content-Type': 'application/x-www-form-urlencoded'
-    },
-    body: params.toString()
-  });
+                <!-- Expiry Note -->
+                <tr>
+                  <td align="center" style="padding-bottom: 24px;">
+                    <p style="margin: 0; font-size: 12px; color: #64748b;">
+                      ⏳ This code expires in <strong>5 minutes</strong> and can only be used once.<br>
+                      If you did not request this code, please ignore this email.
+                    </p>
+                  </td>
+                </tr>
 
-  const resData = await response.json();
+                <!-- Footer Divider & Copyright -->
+                <tr>
+                  <td style="border-top: 1px solid #1e293b; padding-top: 20px; text-align: center;">
+                    <p style="margin: 0; font-size: 11px; color: #475569;">
+                      © ${new Date().getFullYear()} SFit Inc. AI 3D Virtual Garment Fitting Platform.
+                    </p>
+                  </td>
+                </tr>
 
-  if (!response.ok) {
-    console.error('[Twilio API Error Response]:', resData);
-    throw new Error(resData.message || `Twilio error: ${resData.status}`);
-  }
-
-  console.log(`[Twilio SMS Success] SMS sent. Message SID: ${resData.sid}`);
-  return resData;
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
+  `;
 }
 
 /**
  * POST /api/auth/send-otp
- * Accepts a 10-digit mobile number, generates a 4-digit OTP, and sends a real SMS via Twilio.
+ * Accepts email, validates format & rate limits, generates a 6-digit cryptographically secure OTP,
+ * hashes it in memory, and dispatches an email via Resend.
  */
 router.post('/send-otp', async (req, res) => {
   try {
-    const { phoneNumber } = req.body;
+    const { email } = req.body;
 
-    if (!phoneNumber || !/^\d{10}$/.test(phoneNumber)) {
+    // 1. Email Format Validation
+    if (!isValidEmail(email)) {
       return res.status(400).json({
         success: false,
-        message: 'Please enter a valid 10-digit mobile number.'
+        message: 'Please provide a valid email address (e.g. name@gmail.com).'
       });
     }
 
-    // Generate a random 4-digit OTP
-    const generatedOtp = Math.floor(1000 + Math.random() * 9000).toString();
-    const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes validity
+    const normalizedEmail = email.toLowerCase().trim();
+    const now = Date.now();
+
+    // 2. Rate Limiting Protection
+    const rateData = rateLimitStore.get(normalizedEmail) || {
+      lastRequestedAt: 0,
+      requestCount: 0,
+      windowStart: now
+    };
+
+    // Reset 15-minute window if expired
+    if (now - rateData.windowStart > RATE_LIMIT_WINDOW_MS) {
+      rateData.windowStart = now;
+      rateData.requestCount = 0;
+    }
+
+    // Cooldown check (60 seconds between requests)
+    const elapsedSinceLast = now - rateData.lastRequestedAt;
+    if (elapsedSinceLast < RESEND_COOLDOWN_MS) {
+      const waitSeconds = Math.ceil((RESEND_COOLDOWN_MS - elapsedSinceLast) / 1000);
+      return res.status(429).json({
+        success: false,
+        message: `Please wait ${waitSeconds} seconds before requesting another verification code.`,
+        retryAfterSeconds: waitSeconds
+      });
+    }
+
+    // Window threshold check (max 5 requests per 15 minutes)
+    if (rateData.requestCount >= MAX_REQUESTS_PER_WINDOW) {
+      const windowRemainingMin = Math.ceil((RATE_LIMIT_WINDOW_MS - (now - rateData.windowStart)) / 60000);
+      return res.status(429).json({
+        success: false,
+        message: `Too many OTP requests for this email. Please try again in ${windowRemainingMin} minutes.`
+      });
+    }
+
+    // 3. Verify Resend API Key Configuration
+    const resend = getResendClient();
+    if (!resend) {
+      console.error('[SFit Auth Error] RESEND_API_KEY is not configured in backend/.env');
+      return res.status(500).json({
+        success: false,
+        message: 'Email service is not configured. Please add RESEND_API_KEY in backend/.env'
+      });
+    }
+
+    // 4. Generate 6-Digit Cryptographically Secure OTP
+    const rawOtp = crypto.randomInt(100000, 1000000).toString();
+    const hashedOtp = hashOtp(rawOtp, normalizedEmail);
+    const expiresAt = now + OTP_EXPIRY_MS;
 
     // Store in-memory
-    otpStore.set(phoneNumber, { otp: generatedOtp, expiresAt });
+    otpStore.set(normalizedEmail, {
+      hashedOtp,
+      expiresAt,
+      attempts: 0
+    });
 
-    // Send real SMS
-    try {
-      await sendRealSmsViaTwilio(phoneNumber, generatedOtp);
-    } catch (smsError) {
-      console.error('[Twilio Send Error]:', smsError.message);
-      return res.status(400).json({
+    // Update rate limit store
+    rateData.lastRequestedAt = now;
+    rateData.requestCount += 1;
+    rateLimitStore.set(normalizedEmail, rateData);
+
+    // 5. Send Email via Resend
+    const senderEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+    console.log(`[SFit Auth] Sending OTP to ${normalizedEmail} via Resend (${senderEmail})...`);
+
+    const { data: emailData, error: emailError } = await resend.emails.send({
+      from: `SFit <${senderEmail}>`,
+      to: [normalizedEmail],
+      subject: `Your SFit Verification Code: ${rawOtp}`,
+      html: generateOtpEmailHtml(rawOtp, normalizedEmail),
+      text: `Your SFit verification code is: ${rawOtp}. Valid for 5 minutes.`
+    });
+
+    if (emailError) {
+      console.error('[SFit Auth Resend Error]:', emailError);
+      return res.status(500).json({
         success: false,
-        message: smsError.message
+        message: emailError.message || 'Failed to send verification email through Resend.'
       });
     }
+
+    console.log(`[SFit Auth] Email sent successfully. Resend ID: ${emailData?.id}`);
 
     return res.status(200).json({
       success: true,
-      message: 'OTP verification code sent successfully to your phone!'
+      message: 'Verification code sent to your email successfully.',
+      cooldownSeconds: 60
     });
+
   } catch (error) {
     console.error('[SFit Auth Error] send-otp:', error);
     return res.status(500).json({
       success: false,
-      message: 'Failed to process OTP request.'
+      message: 'An unexpected error occurred while processing your OTP request.'
     });
   }
 });
 
 /**
  * POST /api/auth/verify-otp
- * Accepts phone number + OTP, verifies, and returns session token + user profile.
+ * Accepts email + OTP, checks validity & single-use constraint, and returns user profile & session token.
  */
 router.post('/verify-otp', (req, res) => {
   try {
-    const { phoneNumber, otp } = req.body;
+    const { email, otp } = req.body;
 
-    if (!phoneNumber || !otp) {
+    if (!isValidEmail(email)) {
       return res.status(400).json({
         success: false,
-        message: 'Mobile number and OTP are required.'
+        message: 'A valid email address is required.'
       });
     }
 
-    const storedData = otpStore.get(phoneNumber);
-
-    if (!storedData) {
+    if (!otp || typeof otp !== 'string' || !/^\d{6}$/.test(otp.trim())) {
       return res.status(400).json({
         success: false,
-        message: 'No active OTP request found for this mobile number. Please send OTP again.'
+        message: 'Please enter a valid 6-digit verification code.'
       });
     }
 
-    if (Date.now() > storedData.expiresAt) {
-      otpStore.delete(phoneNumber);
+    const normalizedEmail = email.toLowerCase().trim();
+    const cleanOtp = otp.trim();
+    const storedRecord = otpStore.get(normalizedEmail);
+
+    // 1. Check if an active OTP exists
+    if (!storedRecord) {
       return res.status(400).json({
         success: false,
-        message: 'The OTP has expired. Please request a new OTP.'
+        message: 'No active OTP request found for this email. Please request a new code.'
       });
     }
 
-    if (storedData.otp !== otp) {
+    // 2. Check Expiry
+    if (Date.now() > storedRecord.expiresAt) {
+      otpStore.delete(normalizedEmail);
       return res.status(400).json({
         success: false,
-        message: 'Incorrect OTP. Please try again.'
+        message: 'The verification code has expired. Please request a new one.'
       });
     }
 
-    // OTP is valid! Clear it from temporary storage
-    otpStore.delete(phoneNumber);
+    // 3. Increment and Check Attempt Limits
+    storedRecord.attempts += 1;
+    if (storedRecord.attempts > MAX_VERIFICATION_ATTEMPTS) {
+      otpStore.delete(normalizedEmail);
+      return res.status(400).json({
+        success: false,
+        message: 'Too many incorrect attempts. For security, please request a new verification code.'
+      });
+    }
 
-    // Retrieve or register user in users.json
+    // 4. Verify Hash
+    const incomingHashed = hashOtp(cleanOtp, normalizedEmail);
+    if (incomingHashed !== storedRecord.hashedOtp) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid verification code. Please check your email and try again.'
+      });
+    }
+
+    // 5. Code is valid! Delete immediately to ensure SINGLE-USE
+    otpStore.delete(normalizedEmail);
+
+    // 6. User Management: Load, Register or Update in users.json
     const users = loadUsers();
-    let user = users.find(u => u.phoneNumber === phoneNumber);
+    let user = users.find(u => u.email && u.email.toLowerCase() === normalizedEmail);
+
+    const displayName = normalizedEmail.split('@')[0];
 
     if (!user) {
-      // Register new user profile
       user = {
         id: 'usr_' + Date.now(),
-        phoneNumber,
-        name: `SFit Shopper (+91 ${phoneNumber.substring(0, 5)} ${phoneNumber.substring(5)})`,
-        createdAt: new Date().toISOString()
+        email: normalizedEmail,
+        name: displayName.charAt(0).toUpperCase() + displayName.slice(1),
+        createdAt: new Date().toISOString(),
+        lastLoginAt: new Date().toISOString()
       };
       users.push(user);
       saveUsers(users);
-      console.log(`[SFit Auth] Registered new user: ${user.name}`);
+      console.log(`[SFit Auth] Registered new user profile: ${user.email}`);
     } else {
-      console.log(`[SFit Auth] User logged in: ${user.name}`);
+      user.lastLoginAt = new Date().toISOString();
+      saveUsers(users);
+      console.log(`[SFit Auth] User authenticated: ${user.email}`);
     }
 
-    // Generate a simple session token
-    const token = 'token_' + Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
+    // 7. Generate Session Token
+    const token = 'sfit_' + crypto.randomBytes(24).toString('hex');
 
     return res.status(200).json({
       success: true,
@@ -198,11 +377,12 @@ router.post('/verify-otp', (req, res) => {
       token,
       user
     });
+
   } catch (error) {
     console.error('[SFit Auth Error] verify-otp:', error);
     return res.status(500).json({
       success: false,
-      message: 'Verification failed.'
+      message: 'Verification failed due to a server error.'
     });
   }
 });

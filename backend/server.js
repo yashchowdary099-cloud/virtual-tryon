@@ -52,9 +52,14 @@ app.listen(PORT, () => {
   const isConfigured = token && !token.includes('your_replicate');
   const maskedToken = isConfigured ? `${token.substring(0, 5)}...${token.substring(token.length - 4)}` : '❌ NOT CONFIGURED (Using Placeholder)';
 
+  const resendKey = process.env.RESEND_API_KEY || '';
+  const isResendConfigured = resendKey && !resendKey.includes('your_resend') && resendKey.startsWith('re_');
+  const maskedResend = isResendConfigured ? `${resendKey.substring(0, 5)}...${resendKey.substring(resendKey.length - 4)}` : '❌ NOT CONFIGURED (Add RESEND_API_KEY in .env)';
+
   console.log(`===================================================`);
   console.log(` 🚀 SFit Backend Server Running on Port ${PORT}`);
   console.log(` 🔑 REPLICATE_API_TOKEN: ${maskedToken}`);
+  console.log(` 📧 RESEND_API_KEY:      ${maskedResend}`);
   console.log(` 🌐 Health check: http://localhost:${PORT}/api/health`);
   console.log(` 📦 Product API:  http://localhost:${PORT}/api/products`);
   console.log(` 👔 Try-On API:   http://localhost:${PORT}/api/try-on`);

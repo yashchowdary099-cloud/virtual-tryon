@@ -4,100 +4,58 @@
 @tailwind utilities;
 
 @layer base {
-  html.dark body {
-    @apply bg-slate-950 text-slate-100 font-sans antialiased min-h-screen overflow-x-hidden transition-colors duration-300;
-  }
-  html.light body {
-    @apply bg-slate-50 text-slate-900 font-sans antialiased min-h-screen overflow-x-hidden transition-colors duration-300;
+  body {
+    @apply bg-slate-950 text-slate-100 font-sans antialiased min-h-screen overflow-x-hidden;
   }
 }
 
-/* Glassmorphism styling for Dark vs Light mode */
-html.dark .glass-panel {
-  @apply bg-slate-900/70 backdrop-blur-md border border-slate-800/80 shadow-xl text-slate-100;
-}
-html.light .glass-panel {
-  @apply bg-white/80 backdrop-blur-md border border-slate-200/80 shadow-xl text-slate-900;
+/* Glassmorphism styling */
+.glass-panel {
+  @apply bg-slate-900/75 backdrop-blur-xl border border-slate-800 shadow-2xl text-slate-100;
 }
 
-html.dark .glass-card {
-  @apply bg-slate-900/60 backdrop-blur-sm border border-slate-800/60 transition-all duration-300 hover:border-indigo-500/40 hover:shadow-indigo-500/10 hover:shadow-2xl text-slate-100;
-}
-html.light .glass-card {
-  @apply bg-white/90 backdrop-blur-sm border border-slate-200/80 transition-all duration-300 hover:border-indigo-500/40 hover:shadow-indigo-500/10 hover:shadow-2xl text-slate-900;
+.glass-card {
+  @apply bg-slate-900/60 backdrop-blur-md border border-slate-800/80 transition-all duration-300 hover:border-indigo-500/50 hover:shadow-indigo-500/15 hover:shadow-2xl text-slate-100;
 }
 
 /* Floating Animations */
 @keyframes float {
-  0%, 100% {
-    transform: translateY(0px) rotate(0deg);
-  }
-  50% {
-    transform: translateY(-12px) rotate(1.5deg);
-  }
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(1.5deg); }
 }
 
 @keyframes float-reverse {
-  0%, 100% {
-    transform: translateY(0px) rotate(0deg);
-  }
-  50% {
-    transform: translateY(12px) rotate(-1.5deg);
-  }
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(12px) rotate(-1.5deg); }
 }
 
 @keyframes float-slow {
-  0%, 100% {
-    transform: translateY(0px) scale(1);
-  }
-  50% {
-    transform: translateY(-8px) scale(1.03);
-  }
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-8px) scale(1.03); }
 }
 
 @keyframes glow-pulse {
-  0%, 100% {
-    opacity: 0.4;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.8;
-    transform: scale(1.08);
-  }
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.08); }
 }
 
-.animate-float {
-  animation: float 4s ease-in-out infinite;
-}
+.animate-float { animation: float 4s ease-in-out infinite; }
+.animate-float-reverse { animation: float-reverse 4.5s ease-in-out infinite; }
+.animate-float-slow { animation: float-slow 5s ease-in-out infinite; }
+.animate-glow-pulse { animation: glow-pulse 3s ease-in-out infinite; }
 
-.animate-float-reverse {
-  animation: float-reverse 4.5s ease-in-out infinite;
-}
-
-.animate-float-slow {
-  animation: float-slow 5s ease-in-out infinite;
-}
-
-.animate-glow-pulse {
-  animation: glow-pulse 3s ease-in-out infinite;
-}
-
-/* Custom scrollbar */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
-html.dark ::-webkit-scrollbar-track {
+::-webkit-scrollbar-track {
   background: #020617;
 }
-html.dark ::-webkit-scrollbar-thumb {
+::-webkit-scrollbar-thumb {
   background: #1e293b;
   border-radius: 4px;
 }
-html.light ::-webkit-scrollbar-track {
-  background: #f8fafc;
-}
-html.light ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
 }
