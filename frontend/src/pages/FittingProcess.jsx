@@ -16,7 +16,7 @@ export default function FittingProcess() {
 
   const stages = [
     { title: 'Uploading Posture & Garment Assets', desc: 'Sending front posture photo and garment image to backend API' },
-    { title: 'Replicate IDM-VTON Model Initialized', desc: 'Creating AI prediction worker on Nvidia A100 GPU compute node' },
+    { title: 'Replicate IDM-VTON Model Initialized', desc: 'Creating AI prediction worker on Nvidia GPU compute node' },
     { title: 'Photorealistic AI Diffusion & Draping', desc: 'Synthesizing fabric transfer, lighting gradients & body alignment (~15–30s)' },
     { title: 'Rendering Final Composited Output', desc: 'Finalizing high-resolution try-on result and verifying size match' }
   ];
@@ -59,6 +59,7 @@ export default function FittingProcess() {
         preferredSize: targetSize,
         garmentImage: selectedProduct?.overlayImage || selectedProduct?.image,
         garmentName: selectedProduct?.name || 'Casual Shirt',
+        category: selectedProduct?.category || 'upper_body',
         front: dataURLtoBlob(capturedImages.front),
         back: dataURLtoBlob(capturedImages.back),
         left: dataURLtoBlob(capturedImages.left),
@@ -69,7 +70,6 @@ export default function FittingProcess() {
 
       clearInterval(timer);
 
-      // STRICT VERIFICATION: Do NOT navigate to /result if backend returned success === false!
       if (result && result.success && result.angles && result.angles.front && result.angles.front.url) {
         setCurrentStage(stages.length - 1);
         setTryOnResult(result);
@@ -83,7 +83,6 @@ export default function FittingProcess() {
     } catch (err) {
       clearInterval(timer);
       console.error('Fitting Pipeline Error:', err);
-      // STAY ON ERROR SCREEN - DO NOT FALL BACK TO FAKE RESULT!
       setErrorMessage(err.message || 'Virtual try-on generation failed. Please check your Replicate API key.');
     }
   };
@@ -96,70 +95,70 @@ export default function FittingProcess() {
     >
       <ProgressStepper activeStep={3} />
 
-      <div className="glass-panel p-8 sm:p-12 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 text-center relative overflow-hidden shadow-2xl">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="bg-white p-8 sm:p-12 rounded-3xl border border-[#E8E2D5] text-center relative overflow-hidden shadow-sm">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-[#FAF7F2] rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative w-28 h-28 mx-auto mb-8 flex items-center justify-center">
-          <div className="absolute inset-0 rounded-full border-2 border-indigo-500/30 animate-ping" />
-          <div className="absolute inset-2 rounded-full border border-purple-500/40 animate-spin-slow" />
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center shadow-xl shadow-indigo-500/40">
-            <Cpu className="w-10 h-10 text-white animate-pulse" />
+        <div className="relative w-24 h-24 mx-auto mb-8 flex items-center justify-center">
+          <div className="absolute inset-0 rounded-full border-2 border-[#1A1817]/10 animate-ping" />
+          <div className="absolute inset-2 rounded-full border border-[#8C6D3F]/30 animate-spin-slow" />
+          <div className="w-16 h-16 rounded-full bg-[#1A1817] flex items-center justify-center shadow-md">
+            <Cpu className="w-8 h-8 text-[#C59B27] animate-pulse" />
           </div>
         </div>
 
-        <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-600 dark:text-indigo-300 text-xs font-black uppercase tracking-widest mb-3">
-          <Sparkles className="w-3.5 h-3.5 text-pink-500" />
-          Replicate IDM-VTON AI Engine
+        <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#F4EFE6] border border-[#E8E2D5] text-[#8C6D3F] text-xs font-extrabold uppercase tracking-widest mb-3">
+          <Sparkles className="w-3.5 h-3.5 text-[#C59B27]" />
+          Replicate IDM-VTON Neural Fitting
         </span>
 
-        <h2 className="text-2xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight mb-2">
-          {errorMessage ? 'Try-On Generation Failed' : 'Generating Real AI Try-On'}
+        <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#1A1817] tracking-tight mb-2">
+          {errorMessage ? 'Try-On Generation Notice' : 'Generating Neural Virtual Try-On'}
         </h2>
         
-        <p className="text-slate-600 dark:text-slate-300 text-xs sm:text-sm max-w-md mx-auto mb-8 font-medium">
-          {errorMessage ? 'The AI model could not process your garment transfer request.' : 'Generating photorealistic garment transfer via Replicate IDM-VTON model — this takes ~15–30 seconds...'}
+        <p className="text-[#6E675F] text-xs sm:text-sm max-w-md mx-auto mb-8 font-medium">
+          {errorMessage ? 'The AI model could not process your garment transfer request.' : 'Draping photorealistic fabric transfer onto your body pose (~15–30s)...'}
         </p>
 
-        {/* STRICT ERROR DISPLAY BOX (NO FAKE FALLBACK) */}
+        {/* ERROR DISPLAY BOX */}
         {errorMessage ? (
-          <div className="max-w-lg mx-auto p-6 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 text-left space-y-4 shadow-xl">
-            <div className="flex items-center gap-3 text-rose-600 dark:text-rose-400 font-bold text-sm">
-              <AlertCircle className="w-6 h-6 shrink-0" />
-              <span>Real Replicate API Error</span>
+          <div className="max-w-lg mx-auto p-6 rounded-2xl bg-[#FFF8F6] border border-[#F5C2B8] text-left space-y-4 shadow-sm">
+            <div className="flex items-center gap-3 text-[#B85C38] font-bold text-sm">
+              <AlertCircle className="w-5 h-5 shrink-0" />
+              <span>Replicate API Status Notice</span>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-rose-100/60 dark:bg-slate-950 border border-rose-200 dark:border-slate-800 text-xs font-mono text-rose-800 dark:text-rose-300 leading-relaxed break-words">
+            <div className="p-3.5 rounded-xl bg-white border border-[#F5C2B8] text-xs font-mono text-[#B85C38] leading-relaxed break-words">
               {errorMessage}
             </div>
 
-            <div className="text-xs text-slate-600 dark:text-slate-300 space-y-1">
-              <p className="font-bold flex items-center gap-1.5 text-slate-800 dark:text-white">
-                <Key className="w-4 h-4 text-amber-500" /> How to fix:
+            <div className="text-xs text-[#57524A] space-y-1">
+              <p className="font-bold flex items-center gap-1.5 text-[#1A1817]">
+                <Key className="w-4 h-4 text-[#8C6D3F]" /> Setup Instructions:
               </p>
               <ol className="list-decimal list-inside space-y-1 pl-1 text-[11px]">
-                <li>Get an API token from <a href="https://replicate.com/account/api-tokens" target="_blank" rel="noreferrer" className="text-indigo-500 underline font-semibold">replicate.com/account/api-tokens</a></li>
-                <li>Add it in <code className="bg-slate-200 dark:bg-slate-900 px-1 py-0.5 rounded text-pink-500">backend/.env</code> as: <code className="bg-slate-200 dark:bg-slate-900 px-1 py-0.5 rounded text-emerald-500">REPLICATE_API_TOKEN=r8_...</code></li>
-                <li>Restart backend server: <code className="bg-slate-200 dark:bg-slate-900 px-1 py-0.5 rounded text-indigo-400">cd backend && npm start</code></li>
+                <li>Get an API token from <a href="https://replicate.com/account/api-tokens" target="_blank" rel="noreferrer" className="text-[#8C6D3F] underline font-bold">replicate.com/account/api-tokens</a></li>
+                <li>Add it in <code className="bg-[#FAF7F2] px-1 py-0.5 rounded text-[#1A1817]">backend/.env</code> as: <code className="bg-[#FAF7F2] px-1 py-0.5 rounded text-[#8C6D3F]">REPLICATE_API_TOKEN=r8_...</code></li>
+                <li>Restart backend server: <code className="bg-[#FAF7F2] px-1 py-0.5 rounded text-[#1A1817]">cd backend && npm start</code></li>
               </ol>
             </div>
 
             <div className="pt-2 flex flex-wrap gap-2">
               <button
                 onClick={executeTryOnPipeline}
-                className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/30"
+                className="px-4 py-2.5 rounded-full bg-[#1A1817] hover:bg-[#2D2A26] text-white text-xs font-bold flex items-center gap-2 shadow-sm"
               >
-                <RefreshCw className="w-4 h-4" /> Retry AI Try-On
+                <RefreshCw className="w-4 h-4 text-[#C59B27]" /> Retry AI Try-On
               </button>
               <button
                 onClick={() => navigate('/capture')}
-                className="px-4 py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs font-bold flex items-center gap-2"
+                className="px-4 py-2.5 rounded-full bg-[#FAF7F2] hover:bg-[#F4EFE6] text-[#1A1817] border border-[#E8E2D5] text-xs font-bold flex items-center gap-2"
               >
-                <ArrowLeft className="w-4 h-4" /> Back to Photo Capture
+                <ArrowLeft className="w-4 h-4" /> Back to Studio Capture
               </button>
             </div>
           </div>
         ) : (
-          <div className="max-w-lg mx-auto space-y-4 text-left">
+          <div className="max-w-lg mx-auto space-y-3 text-left">
             {stages.map((stg, idx) => {
               const isDone = idx < currentStage;
               const isCurrent = idx === currentStage;
@@ -169,19 +168,19 @@ export default function FittingProcess() {
                   key={idx}
                   className={`p-4 rounded-2xl border transition-all duration-300 flex items-start gap-4 ${
                     isDone
-                      ? 'bg-slate-100 dark:bg-slate-950/80 border-emerald-500/30 text-slate-700 dark:text-slate-200'
+                      ? 'bg-[#FAF7F2] border-[#E8E2D5] text-[#2D2A26]'
                       : isCurrent
-                      ? 'bg-white dark:bg-slate-950 border-indigo-500/60 ring-2 ring-indigo-500/20 text-slate-900 dark:text-white'
-                      : 'bg-slate-50 dark:bg-slate-950/30 border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-600'
+                      ? 'bg-white border-[#1A1817] ring-1 ring-[#1A1817]/20 text-[#1A1817] shadow-sm'
+                      : 'bg-[#FAF8F5]/60 border-[#E8E2D5] text-[#9E968B]'
                   }`}
                 >
                   <div className="mt-0.5">
                     {isDone ? (
-                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                      <CheckCircle2 className="w-5 h-5 text-[#8C6D3F]" />
                     ) : isCurrent ? (
-                      <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
+                      <Loader2 className="w-5 h-5 text-[#1A1817] animate-spin" />
                     ) : (
-                      <div className="w-5 h-5 rounded-full border border-slate-300 dark:border-slate-700 text-[10px] font-bold flex items-center justify-center">
+                      <div className="w-5 h-5 rounded-full border border-[#E8E2D5] text-[10px] font-bold flex items-center justify-center text-[#9E968B]">
                         {idx + 1}
                       </div>
                     )}
@@ -189,7 +188,7 @@ export default function FittingProcess() {
 
                   <div>
                     <h4 className="text-sm font-bold">{stg.title}</h4>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{stg.desc}</p>
+                    <p className="text-xs text-[#6E675F] mt-0.5">{stg.desc}</p>
                   </div>
                 </div>
               );

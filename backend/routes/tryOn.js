@@ -5,7 +5,6 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const sharp = require('sharp');
-const Replicate = require('replicate');
 require('dotenv').config();
 
 // Ensure uploads directory exists
@@ -22,17 +21,14 @@ const upload = multer({
 
 /**
  * Preprocess and optimize image buffer using Sharp:
- * - Validates image metadata
- * - Resizes if larger than 1280px (optimal for IDM-VTON A100 GPU speed & memory)
- * - Returns clean Base64 Data URI
+ * - Resizes if larger than 1280px (optimal for IDM-VTON GPU speed & memory)
+ * - Returns clean buffer
  */
-async function preprocessImageToDataUri(imageBuffer, mimeType = 'image/jpeg') {
+async function preprocessBuffer(imageBuffer) {
   try {
     const metadata = await sharp(imageBuffer).metadata();
-    
     let sharpInstance = sharp(imageBuffer);
 
-    // Resize if dimensions exceed 1280px
     if (metadata.width > 1280 || metadata.height > 1280) {
       sharpInstance = sharpInstance.resize({
         width: metadata.width > metadata.height ? 1280 : undefined,
@@ -42,101 +38,186 @@ async function preprocessImageToDataUri(imageBuffer, mimeType = 'image/jpeg') {
       });
     }
 
-    const processedBuffer = await sharpInstance
-      .jpeg({ quality: 92 })
-      .toBuffer();
-
-    return `data:image/jpeg;base64,${processedBuffer.toString('base64')}`;
+    return await sharpInstance.jpeg({ quality: 92 }).toBuffer();
   } catch (err) {
-    console.warn('[Sharp Warning] Falling back to raw buffer Data URI:', err.message);
-    const mime = mimeType || 'image/jpeg';
-    return `data:${mime};base64,${imageBuffer.toString('base64')}`;
+    console.warn('[Sharp Warning] Falling back to raw buffer:', err.message);
+    return imageBuffer;
   }
 }
 
 /**
- * Executes Virtual Try-On using Replicate IDM-VTON (Identity Preserving)
+ * Converts various image representations (Buffer, Data URI, File Path, HTTP URL)
+ * into a verified local file path in backend/uploads for @gradio/client handle_file.
  */
-async function runIdmVtonTryOn({ humanImageUri, garmentImageUrl, category = 'upper_body', garmentDes = 'casual outfit' }) {
-  const apiToken = process.env.REPLICATE_API_TOKEN;
+async function ensureLocalFile(input, prefix = 'img') {
+  if (!input) return null;
 
-  if (!apiToken || apiToken.trim() === '' || apiToken.includes('your_replicate')) {
-    throw new Error('REPLICATE_API_TOKEN is missing or not configured in backend/.env.');
+  // Case 1: Already a valid local file path
+  if (typeof input === 'string' && fs.existsSync(input) && !input.startsWith('http') && !input.startsWith('data:')) {
+    return input;
   }
 
-  const replicate = new Replicate({
-    auth: apiToken.trim()
-  });
+  const filename = `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}.jpg`;
+  const filePath = path.join(uploadDir, filename);
 
-  console.log(`[Replicate IDM-VTON] Starting identity-preserving try-on for "${garmentDes}"...`);
-  console.log(`[Replicate IDM-VTON] Category: ${category} | Garment: ${garmentImageUrl}`);
+  // Case 2: Buffer
+  if (Buffer.isBuffer(input)) {
+    const optimizedBuffer = await preprocessBuffer(input);
+    fs.writeFileSync(filePath, optimizedBuffer);
+    return filePath;
+  }
 
-  // Replicate IDM-VTON model runners
-  const inputPayload = {
-    human_img: humanImageUri,
-    garm_img: garmentImageUrl,
-    category: category,
-    garment_des: garmentDes,
-    is_checked: true,
-    is_checked_crop: false,
-    denoise_steps: 30,
-    seed: 42
-  };
+  if (typeof input === 'string') {
+    const strInput = input.trim();
 
+    // Case 3: Base64 Data URI
+    if (strInput.startsWith('data:image')) {
+      const base64Data = strInput.replace(/^data:image\/\w+;base64,/, '');
+      const rawBuffer = Buffer.from(base64Data, 'base64');
+      const optimizedBuffer = await preprocessBuffer(rawBuffer);
+      fs.writeFileSync(filePath, optimizedBuffer);
+      return filePath;
+    }
+
+    // Case 4: Remote HTTP/HTTPS URL
+    if (strInput.startsWith('http://') || strInput.startsWith('https://')) {
+      console.log(`[HF IDM-VTON] Fetching remote garment image from URL: ${strInput.substring(0, 60)}...`);
+      const response = await fetch(strInput, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36'
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to download garment image from store URL (HTTP ${response.status})`);
+      }
+      const arrayBuffer = await response.arrayBuffer();
+      const rawBuffer = Buffer.from(arrayBuffer);
+      const optimizedBuffer = await preprocessBuffer(rawBuffer);
+      fs.writeFileSync(filePath, optimizedBuffer);
+      return filePath;
+    }
+  }
+
+  throw new Error('Unsupported image format provided for virtual try-on.');
+}
+
+/**
+ * Normalizes garment category to one of the strict schema values required by IDM-VTON:
+ * - 'upper_body'
+ * - 'lower_body'
+ * - 'dresses'
+ */
+function normalizeCategory(cat = '') {
+  const lower = String(cat).toLowerCase();
+  if (lower.includes('lower') || lower.includes('pant') || lower.includes('bottom') || lower.includes('jeans') || lower.includes('skirt')) {
+    return 'lower_body';
+  }
+  if (lower.includes('dress') || lower.includes('full') || lower.includes('saree') || lower.includes('suit') || lower.includes('gown')) {
+    return 'dresses';
+  }
+  return 'upper_body';
+}
+
+/**
+ * Executes Virtual Try-On using Hugging Face Space API (`yisol/IDM-VTON` -> `/tryon`)
+ */
+async function runIdmVtonTryOn({ humanImageInput, garmentImageInput, category = 'upper_body', garmentDes = 'casual outfit' }) {
+  const hfToken = (process.env.HF_TOKEN || '').trim();
+
+  if (!hfToken) {
+    const authErr = new Error('HF_TOKEN is missing or not configured in backend/.env.');
+    authErr.stage = 'auth';
+    authErr.statusCode = 401;
+    throw authErr;
+  }
+
+  // 1. Prepare local files for Gradio handle_file
+  const personFilePath = await ensureLocalFile(humanImageInput, 'person');
+  const garmentFilePath = await ensureLocalFile(garmentImageInput, 'garment');
+
+  if (!personFilePath || !fs.existsSync(personFilePath)) {
+    throw new Error('Front-facing person image file could not be prepared.');
+  }
+
+  if (!garmentFilePath || !fs.existsSync(garmentFilePath)) {
+    throw new Error('Garment image file could not be prepared.');
+  }
+
+  console.log(`[HF IDM-VTON] Connecting to Hugging Face Space "yisol/IDM-VTON"...`);
+  console.log(`[HF Inputs] Person file: ${path.basename(personFilePath)} | Garment file: ${path.basename(garmentFilePath)} | Desc: "${garmentDes}"`);
+
+  let client;
   try {
-    // Attempt official cuuupid/idm-vton runner
-    const output = await replicate.run(
-      "cuuupid/idm-vton:c87e6b007130b57e7d8234939943423f00886da4a242b308e2b61a83e00d7c7f",
-      { input: inputPayload }
-    );
+    const { Client, handle_file } = await import('@gradio/client');
+    
+    client = await Client.connect('yisol/IDM-VTON', { token: hfToken });
+    console.log('[HF IDM-VTON] Connected successfully. Invoking /tryon endpoint...');
 
-    const outputUrl = Array.isArray(output) ? output[0] : output;
-    console.log(`[Replicate IDM-VTON Success] Result: ${outputUrl}`);
-    return String(outputUrl);
-  } catch (primaryErr) {
-    console.warn('[Replicate IDM-VTON] Primary model call returned notice, trying direct predictions API...');
-
-    // Direct fetch fallback to predictions endpoint
-    const res = await fetch('https://api.replicate.com/v1/models/cuuupid/idm-vton/predictions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiToken.trim()}`,
-        'Content-Type': 'application/json'
+    const result = await client.predict('/tryon', {
+      dict: {
+        background: handle_file(personFilePath),
+        layers: [],
+        composite: null
       },
-      body: JSON.stringify({ input: inputPayload })
+      garm_img: handle_file(garmentFilePath),
+      garment_des: garmentDes || 'casual top',
+      is_checked: true,
+      is_checked_crop: false,
+      denoise_steps: 30,
+      seed: 42
     });
 
-    const pred = await res.json();
-    if (!res.ok || pred.error) {
-      throw new Error(pred.error || pred.detail || `Replicate API error (${res.status})`);
-    }
+    console.log('[HF IDM-VTON] Prediction response received.');
 
-    // Poll until complete
-    const pollUrl = `https://api.replicate.com/v1/predictions/${pred.id}`;
-    for (let i = 0; i < 36; i++) {
-      await new Promise(r => setTimeout(r, 2500));
-      const pollRes = await fetch(pollUrl, {
-        headers: { 'Authorization': `Bearer ${apiToken.trim()}` }
-      });
-      const data = await pollRes.json();
-      console.log(`[Replicate Poll ${i + 1}/36] ID: ${pred.id} | Status: "${data.status}"`);
+    // Parse returned image URL from result payload
+    const outputData = result?.data;
+    let finalImageUrl = null;
 
-      if (data.status === 'succeeded') {
-        const finalUrl = Array.isArray(data.output) ? data.output[0] : data.output;
-        console.log(`[Replicate Success] Final Output: ${finalUrl}`);
-        return String(finalUrl);
-      }
-      if (data.status === 'failed' || data.status === 'canceled') {
-        throw new Error(data.error || 'Replicate prediction failed');
+    if (Array.isArray(outputData) && outputData[0]) {
+      const firstItem = outputData[0];
+      if (typeof firstItem === 'string') {
+        finalImageUrl = firstItem;
+      } else if (firstItem && typeof firstItem === 'object' && firstItem.url) {
+        finalImageUrl = firstItem.url;
       }
     }
-    throw new Error('Replicate IDM-VTON model generation timed out after 90s');
+
+    if (!finalImageUrl) {
+      console.error('[HF IDM-VTON Output Malformed]', JSON.stringify(result));
+      throw new Error('Hugging Face IDM-VTON Space returned an empty or invalid image response.');
+    }
+
+    console.log(`[HF IDM-VTON Success] Generated Result Image URL: ${finalImageUrl}`);
+    return finalImageUrl;
+
+  } catch (err) {
+    console.error('[HF IDM-VTON Exception]:', err.stack || err.message);
+    
+    if (err.message && err.message.includes('401')) {
+      const authErr = new Error('Invalid HF_TOKEN or unauthorized access to Hugging Face Space.');
+      authErr.stage = 'auth';
+      authErr.statusCode = 401;
+      throw authErr;
+    }
+
+    const spaceErr = new Error(err.message || 'Virtual try-on processing failed on Hugging Face IDM-VTON Space.');
+    spaceErr.stage = 'huggingface';
+    spaceErr.statusCode = 502;
+    throw spaceErr;
+  } finally {
+    // Clean up transient files safely in background if needed
+    setTimeout(() => {
+      try {
+        if (personFilePath && fs.existsSync(personFilePath)) fs.unlinkSync(personFilePath);
+        if (garmentFilePath && fs.existsSync(garmentFilePath)) fs.unlinkSync(garmentFilePath);
+      } catch (e) {}
+    }, 60000);
   }
 }
 
 /**
  * POST /api/try-on
- * Receives user photo + selected garment, preserves identity, and executes Replicate IDM-VTON
+ * Receives user photo + selected garment and executes Hugging Face yisol/IDM-VTON
  */
 router.post(
   '/',
@@ -149,66 +230,65 @@ router.post(
     { name: 'right', maxCount: 1 }
   ]),
   async (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
     try {
       const { productId, preferredSize, userSize, garmentImage, garmentName, category } = req.body;
       const files = req.files || {};
 
       const targetSize = userSize || preferredSize || 'L';
-      const targetCategory = category || 'upper_body';
+      const targetCategory = normalizeCategory(category);
 
-      // 1. Resolve Person Image (supports 'front' or 'person' file fields)
-      let personBuffer = null;
-      let personMime = 'image/jpeg';
+      console.log(`[Try-On Request Received] Processing garment "${garmentName || productId || 'Outfit'}"...`);
+
+      // 1. Resolve Person Image (supports 'front' or 'person' file fields or base64)
+      let personInput = null;
 
       if (files.front && files.front[0]) {
-        personBuffer = files.front[0].buffer;
-        personMime = files.front[0].mimetype;
+        personInput = files.front[0].buffer;
       } else if (files.person && files.person[0]) {
-        personBuffer = files.person[0].buffer;
-        personMime = files.person[0].mimetype;
-      }
-
-      let humanDataUri = null;
-      if (personBuffer) {
-        // Save local copy in uploads folder for reference
-        const filename = `front-${Date.now()}.jpg`;
-        const localFilePath = path.join(uploadDir, filename);
-        fs.writeFileSync(localFilePath, personBuffer);
-
-        // Preprocess with Sharp
-        humanDataUri = await preprocessImageToDataUri(personBuffer, personMime);
+        personInput = files.person[0].buffer;
       } else if (req.body.frontBase64) {
-        humanDataUri = req.body.frontBase64;
+        personInput = req.body.frontBase64;
       }
 
-      if (!humanDataUri) {
+      if (!personInput) {
+        console.warn('[Try-On Validation Error] Front-facing person photo is missing.');
         return res.status(400).json({
           success: false,
-          message: 'Please upload or capture your front-facing photo to perform virtual try-on.'
+          error: 'AI fitting processing failed',
+          details: 'Please upload or capture your front-facing photo to perform virtual try-on.',
+          stage: 'validation'
         });
       }
 
       // 2. Resolve Outfit Image (supports 'outfit' file upload or garmentImage URL)
-      let targetGarmentUrl = garmentImage;
+      let garmentInput = garmentImage;
       if (files.outfit && files.outfit[0]) {
-        const outfitUri = await preprocessImageToDataUri(files.outfit[0].buffer, files.outfit[0].mimetype);
-        targetGarmentUrl = outfitUri;
-      } else if (!targetGarmentUrl) {
-        targetGarmentUrl = 'https://pngimg.com/uploads/dress_shirt/dress_shirt_PNG8117.png';
+        garmentInput = files.outfit[0].buffer;
       }
 
-      console.log(`[Try-On Request] Processing garment "${garmentName || productId || 'Outfit'}" with IDM-VTON...`);
+      if (!garmentInput || (typeof garmentInput === 'string' && !garmentInput.trim())) {
+        console.warn('[Try-On Validation Error] Garment image is missing.');
+        return res.status(400).json({
+          success: false,
+          error: 'AI fitting processing failed',
+          details: 'Garment image is missing. Please select or paste a valid garment product link.',
+          stage: 'validation'
+        });
+      }
 
-      // 3. Execute Real Replicate IDM-VTON (Identity Preserving)
+      console.log(`[Try-On Validation Passed] Person input and garment input present.`);
+
+      // 3. Execute Real Hugging Face IDM-VTON (Identity Preserving)
       const aiResultImageUrl = await runIdmVtonTryOn({
-        humanImageUri: humanDataUri,
-        garmentImageUrl: targetGarmentUrl,
+        humanImageInput: personInput,
+        garmentImageInput: garmentInput,
         category: targetCategory,
-        garmentDes: garmentName || 'stylish shirt'
+        garmentDes: garmentName || 'stylish outfit'
       });
 
       // 4. Return Full Result Payload to Frontend
-      return res.json({
+      return res.status(200).json({
         success: true,
         tryOnId: 'tryon_' + Date.now(),
         timestamp: new Date().toISOString(),
@@ -229,7 +309,7 @@ router.post(
         },
         angles: {
           front: {
-            title: 'Front View (Replicate IDM-VTON - Face & Identity Preserved)',
+            title: 'Front View (Hugging Face IDM-VTON - Identity Preserved)',
             url: aiResultImageUrl,
             isAiGenerated: true,
             confidence: '98%'
@@ -253,14 +333,17 @@ router.post(
             confidence: '92%'
           }
         },
-        fitSummaryNote: `Virtual try-on completed with 100% face & identity preservation via Replicate IDM-VTON. Image: ${aiResultImageUrl}`
+        fitSummaryNote: `Virtual try-on completed via Hugging Face IDM-VTON. Image: ${aiResultImageUrl}`
       });
 
     } catch (error) {
       console.error('[Try-On Route Error]:', error.message);
-      return res.status(500).json({
+      const statusCode = error.statusCode || (error.stage === 'auth' ? 401 : 500);
+      return res.status(statusCode).json({
         success: false,
-        message: error.message || 'Virtual try-on generation failed'
+        error: 'AI fitting processing failed',
+        details: error.message || 'An unexpected error occurred during virtual try-on generation.',
+        stage: error.stage || 'huggingface'
       });
     }
   }

@@ -37,14 +37,14 @@ export default function CmMeasurementForm({ onSave }) {
   };
 
   return (
-    <div className="glass-panel p-6 rounded-3xl border border-indigo-500/30 bg-slate-900/90 shadow-2xl">
-      <div className="flex items-center gap-3 mb-4 pb-3 border-b border-slate-800">
-        <div className="w-10 h-10 rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center">
+    <div className="bg-white p-6 rounded-3xl border border-[#E8E2D5] shadow-sm">
+      <div className="flex items-center gap-3 mb-4 pb-3 border-b border-[#E8E2D5]">
+        <div className="w-10 h-10 rounded-full bg-[#FAF7F2] text-[#8C6D3F] border border-[#E8E2D5] flex items-center justify-center">
           <Ruler className="w-5 h-5" />
         </div>
         <div>
-          <h3 className="text-base font-extrabold text-white">Body Measurement Calculator (Centimeters)</h3>
-          <p className="text-xs text-slate-400">Enter your exact cm body metrics for precise garment sizing.</p>
+          <h3 className="font-serif text-lg font-bold text-[#1A1817]">Body Measurement Calculator (Centimeters)</h3>
+          <p className="text-xs text-[#6E675F]">Enter your exact cm body metrics for precise garment sizing.</p>
         </div>
       </div>
 
@@ -53,87 +53,87 @@ export default function CmMeasurementForm({ onSave }) {
           
           {/* Chest cm */}
           <div>
-            <label className="block font-bold text-slate-300 mb-1">Chest / Bust (cm)</label>
+            <label className="block font-bold text-[#1A1817] mb-1">Chest / Bust (cm)</label>
             <input
               type="number"
               min="70"
               max="150"
               value={chestCm}
               onChange={(e) => setChestCm(Number(e.target.value))}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#FAF7F2] border border-[#E8E2D5] rounded-xl px-3 py-2 text-[#1A1817] font-mono focus:outline-none focus:border-[#1A1817]"
               required
             />
-            <span className="text-[10px] text-slate-500 mt-0.5 block">e.g. 108 cm</span>
+            <span className="text-[10px] text-[#6E675F] mt-0.5 block">e.g. 108 cm</span>
           </div>
 
           {/* Shoulder cm */}
           <div>
-            <label className="block font-bold text-slate-300 mb-1">Shoulders (cm)</label>
+            <label className="block font-bold text-[#1A1817] mb-1">Shoulders (cm)</label>
             <input
               type="number"
               min="30"
               max="70"
               value={shoulderCm}
               onChange={(e) => setShoulderCm(Number(e.target.value))}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#FAF7F2] border border-[#E8E2D5] rounded-xl px-3 py-2 text-[#1A1817] font-mono focus:outline-none focus:border-[#1A1817]"
               required
             />
-            <span className="text-[10px] text-slate-500 mt-0.5 block">e.g. 46 cm</span>
+            <span className="text-[10px] text-[#6E675F] mt-0.5 block">e.g. 46 cm</span>
           </div>
 
           {/* Waist cm */}
           <div>
-            <label className="block font-bold text-slate-300 mb-1">Waist (cm)</label>
+            <label className="block font-bold text-[#1A1817] mb-1">Waist (cm)</label>
             <input
               type="number"
               min="60"
               max="140"
               value={waistCm}
               onChange={(e) => setWaistCm(Number(e.target.value))}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#FAF7F2] border border-[#E8E2D5] rounded-xl px-3 py-2 text-[#1A1817] font-mono focus:outline-none focus:border-[#1A1817]"
               required
             />
-            <span className="text-[10px] text-slate-500 mt-0.5 block">e.g. 92 cm</span>
+            <span className="text-[10px] text-[#6E675F] mt-0.5 block">e.g. 92 cm</span>
           </div>
 
           {/* Height cm */}
           <div>
-            <label className="block font-bold text-slate-300 mb-1">Height (cm)</label>
+            <label className="block font-bold text-[#1A1817] mb-1">Height (cm)</label>
             <input
               type="number"
               min="120"
               max="220"
               value={heightCm}
               onChange={(e) => setHeightCm(Number(e.target.value))}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#FAF7F2] border border-[#E8E2D5] rounded-xl px-3 py-2 text-[#1A1817] font-mono focus:outline-none focus:border-[#1A1817]"
               required
             />
-            <span className="text-[10px] text-slate-500 mt-0.5 block">e.g. 178 cm</span>
+            <span className="text-[10px] text-[#6E675F] mt-0.5 block">e.g. 178 cm</span>
           </div>
 
           {/* Weight kg */}
           <div>
-            <label className="block font-bold text-slate-300 mb-1">Weight (kg)</label>
+            <label className="block font-bold text-[#1A1817] mb-1">Weight (kg)</label>
             <input
               type="number"
               min="30"
               max="160"
               value={weightKg}
               onChange={(e) => setWeightKg(Number(e.target.value))}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#FAF7F2] border border-[#E8E2D5] rounded-xl px-3 py-2 text-[#1A1817] font-mono focus:outline-none focus:border-[#1A1817]"
               required
             />
-            <span className="text-[10px] text-slate-500 mt-0.5 block">e.g. 76 kg</span>
+            <span className="text-[10px] text-[#6E675F] mt-0.5 block">e.g. 76 kg</span>
           </div>
 
           {/* Calculated Output Box */}
-          <div className="bg-slate-950 p-3 rounded-xl border border-emerald-500/30 flex flex-col justify-between">
-            <span className="text-[10px] font-bold text-emerald-400 uppercase">Calculated Size</span>
+          <div className="bg-[#FAF7F2] p-3 rounded-xl border border-[#E8E2D5] flex flex-col justify-between">
+            <span className="text-[10px] font-bold text-[#8C6D3F] uppercase">Calculated Size</span>
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-black text-white">{currentResult.size}</span>
-              <span className="text-[10px] text-slate-400 font-semibold">({currentResult.fitName})</span>
+              <span className="font-serif text-2xl font-bold text-[#1A1817]">{currentResult.size}</span>
+              <span className="text-[10px] text-[#6E675F] font-semibold">({currentResult.fitName})</span>
             </div>
-            <span className="text-[10px] text-slate-400">Chest Range: {currentResult.range}</span>
+            <span className="text-[10px] text-[#6E675F]">Chest Range: {currentResult.range}</span>
           </div>
 
         </div>
@@ -141,9 +141,9 @@ export default function CmMeasurementForm({ onSave }) {
         {/* Submit Save Button */}
         <button
           type="submit"
-          className="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2"
+          className="w-full py-3 px-4 rounded-full bg-[#1A1817] hover:bg-[#2D2A26] text-white font-bold text-xs shadow-md flex items-center justify-center gap-2"
         >
-          <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+          <CheckCircle2 className="w-4 h-4 text-[#C59B27]" />
           Apply {chestCm} cm Measurements & Confirm Size {currentResult.size}
         </button>
       </form>

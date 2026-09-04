@@ -8,18 +8,24 @@ export default {
   theme: {
     extend: {
       colors: {
-        brand: {
-          50: '#f0f3ff',
-          100: '#e0e7ff',
-          500: '#6366f1',
-          600: '#4f46e5',
-          700: '#4338ca',
-          900: '#1e1b4b',
+        fashion: {
+          bg: '#FAF8F5',
+          surface: '#FAF7F2',
+          card: '#FFFFFF',
+          border: '#E8E2D5',
+          dark: '#1A1817',
+          espresso: '#2D2A26',
+          muted: '#6E675F',
+          lightMuted: '#9E968B',
+          gold: '#C59B27',
+          bronze: '#8C6D3F',
+          terracotta: '#B85C38',
         }
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-        brand: ['Syne', 'Outfit', 'sans-serif'],
+        sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+        serif: ['Cormorant Garamond', 'Georgia', 'serif'],
+        brand: ['Cormorant Garamond', 'serif'],
       }
     },
   },

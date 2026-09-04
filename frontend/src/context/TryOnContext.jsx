@@ -6,10 +6,7 @@ const TryOnContext = createContext(null);
 export function TryOnProvider({ children }) {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [capturedImages, setCapturedImages] = useState({
-    front: null,
-    back: null,
-    left: null,
-    right: null
+    front: null
   });
 
   const [userMeasurements, setUserMeasurements] = useState({
@@ -46,10 +43,7 @@ export function TryOnProvider({ children }) {
 
   const clearCapturedImages = () => {
     setCapturedImages({
-      front: null,
-      back: null,
-      left: null,
-      right: null
+      front: null
     });
   };
 
@@ -113,6 +107,8 @@ export function TryOnProvider({ children }) {
 
 export function useTryOn() {
   const context = useContext(TryOnContext);
-  if (!context) throw new Error('useTryOn must be used within a TryOnProvider');
+  if (!context) {
+    throw new Error('useTryOn must be used within a TryOnProvider');
+  }
   return context;
 }

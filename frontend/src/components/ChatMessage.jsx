@@ -40,48 +40,48 @@ export default function ChatMessage({ message }) {
   return (
     <div className={`flex flex-col mb-4 ${isBot ? 'items-start' : 'items-end'}`}>
       
-      <div className={`flex items-end gap-2 max-w-[85%] ${isBot ? 'flex-row' : 'flex-row-reverse'}`}>
+      <div className={`flex items-end gap-2 max-w-[88%] ${isBot ? 'flex-row' : 'flex-row-reverse'}`}>
         
         {/* Avatar */}
-        <div className={`w-7 h-7 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 shadow-md ${
+        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 shadow-sm ${
           isBot 
-            ? 'bg-gradient-to-tr from-indigo-600 to-pink-500 text-white' 
-            : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+            ? 'bg-[#1A1817] text-white' 
+            : 'bg-[#F4EFE6] text-[#1A1817] border border-[#E8E2D5]'
         }`}>
-          {isBot ? <Sparkles className="w-4 h-4" /> : <User className="w-4 h-4" />}
+          {isBot ? <Sparkles className="w-3.5 h-3.5 text-[#C59B27]" /> : <User className="w-3.5 h-3.5 text-[#8C6D3F]" />}
         </div>
 
         {/* Message Bubble Body */}
-        <div className={`p-3.5 rounded-2xl text-xs shadow-md ${
+        <div className={`p-3.5 rounded-2xl text-xs shadow-sm ${
           isBot
-            ? 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 rounded-bl-none shadow-sm'
-            : 'bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 text-white rounded-br-none'
+            ? 'bg-white border border-[#E8E2D5] text-[#1A1817] rounded-bl-none'
+            : 'bg-[#1A1817] text-white rounded-br-none'
         }`}>
           {renderFormattedText(message.text)}
 
           {/* Embedded Mini Product Cards */}
           {message.products && message.products.length > 0 && (
-            <div className="mt-3 space-y-2 border-t border-slate-200 dark:border-slate-800 pt-3">
+            <div className="mt-3 space-y-2 border-t border-[#E8E2D5] pt-3">
               {message.products.map((prod) => (
                 <div
                   key={prod.id}
-                  className="flex items-center gap-3 p-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 hover:border-indigo-500/50 transition-all shadow-sm"
+                  className="flex items-center gap-3 p-2 rounded-xl bg-[#FAF7F2] border border-[#E8E2D5] hover:border-[#1A1817] transition-all shadow-sm"
                 >
                   <img
                     src={prod.image}
                     alt={prod.name}
-                    className="w-12 h-14 object-contain bg-white dark:bg-slate-900 rounded-lg p-1 border border-slate-200 dark:border-slate-800"
+                    className="w-12 h-14 object-contain bg-white rounded-lg p-1 border border-[#E8E2D5]"
                   />
                   <div className="flex-1 min-w-0">
-                    <span className="text-[9px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">{prod.brand}</span>
-                    <h5 className="text-xs font-bold text-slate-900 dark:text-white truncate">{prod.name}</h5>
-                    <p className="text-xs font-black text-emerald-600 dark:text-emerald-400 mt-0.5">₹{prod.price?.toLocaleString('en-IN')}</p>
+                    <span className="text-[9px] font-bold text-[#8C6D3F] uppercase tracking-wider">{prod.brand}</span>
+                    <h5 className="font-serif text-xs font-bold text-[#1A1817] truncate">{prod.name}</h5>
+                    <p className="text-xs font-black text-[#1A1817] mt-0.5">₹{prod.price?.toLocaleString('en-IN')}</p>
                   </div>
                   <button
                     onClick={() => handleTryOnProduct(prod)}
-                    className="px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black shadow transition-all flex items-center gap-1 shrink-0"
+                    className="px-3 py-1.5 rounded-full bg-[#1A1817] hover:bg-[#2D2A26] text-white text-[10px] font-bold shadow transition-all flex items-center gap-1 shrink-0"
                   >
-                    <Sparkles className="w-3 h-3" /> Try On
+                    <Sparkles className="w-3 h-3 text-[#C59B27]" /> Try On
                   </button>
                 </div>
               ))}
@@ -90,18 +90,18 @@ export default function ChatMessage({ message }) {
 
           {/* Mock Human Agent Support Action */}
           {message.showHumanAgent && (
-            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+            <div className="mt-3 pt-2 border-t border-[#E8E2D5]">
               <button
                 onClick={() => sendMessage("Talk to Support Agent")}
-                className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-500/20 text-xs font-bold transition-all"
+                className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-full bg-[#F4EFE6] border border-[#E8E2D5] text-[#1A1817] hover:bg-[#E8E2D5] text-xs font-bold transition-all"
               >
-                <Headset className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" /> Connect to Live Support Agent
+                <Headset className="w-3.5 h-3.5 text-[#8C6D3F]" /> Connect to Live Support Agent
               </button>
             </div>
           )}
 
           {/* Timestamp */}
-          <span className={`block text-[9px] mt-1.5 text-right font-medium ${isBot ? 'text-slate-400 dark:text-slate-500' : 'text-indigo-200'}`}>
+          <span className={`block text-[9px] mt-1.5 text-right font-medium ${isBot ? 'text-[#9E968B]' : 'text-slate-300'}`}>
             {message.timestamp}
           </span>
         </div>
@@ -115,7 +115,7 @@ export default function ChatMessage({ message }) {
             <button
               key={idx}
               onClick={() => handleQuickReplyClick(chip)}
-              className="px-3 py-1 rounded-full bg-white dark:bg-slate-900 hover:bg-indigo-50 dark:hover:bg-indigo-600/30 border border-slate-200 dark:border-slate-800 hover:border-indigo-500/40 text-[11px] font-semibold text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-200 transition-all active:scale-95 shadow-sm"
+              className="px-3 py-1 rounded-full bg-white hover:bg-[#FAF7F2] border border-[#E8E2D5] text-[11px] font-semibold text-[#57524A] hover:text-[#1A1817] transition-all active:scale-95 shadow-sm"
             >
               {chip}
             </button>

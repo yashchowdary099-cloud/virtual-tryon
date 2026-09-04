@@ -9,6 +9,7 @@ const tryOnRoute = require('./routes/tryOn');
 const checkoutRoute = require('./routes/checkout');
 const chatbotRoute = require('./routes/chatbot');
 const authRoute = require('./routes/auth');
+const extractUrlRoute = require('./routes/extractUrl');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -45,6 +46,7 @@ app.use('/api/try-on', tryOnRoute);
 app.use('/api/checkout', checkoutRoute);
 app.use('/api/chatbot', chatbotRoute);
 app.use('/api/auth', authRoute);
+app.use('/api/extract-url', extractUrlRoute);
 
 // Start Server
 app.listen(PORT, () => {

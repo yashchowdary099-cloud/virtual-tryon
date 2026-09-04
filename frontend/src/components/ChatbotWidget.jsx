@@ -34,24 +34,24 @@ export default function ChatbotWidget() {
 
   return (
     <>
-      {/* FLOATING CHAT BUBBLE ICON TRIGGER BUTTON */}
+      {/* FLOATING CHAT BUBBLE TRIGGER BUTTON */}
       {!isOpen && (
         <button
           onClick={toggleChat}
           aria-label="Open SFit Assistant Chat"
-          className="fixed bottom-6 right-6 z-50 group flex items-center gap-2.5 p-3.5 rounded-full bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 text-white shadow-xl shadow-indigo-600/40 hover:shadow-indigo-600/60 hover:scale-105 transition-all duration-300 ring-2 ring-indigo-400/40"
+          className="fixed bottom-6 right-6 z-50 group flex items-center gap-2.5 px-4 py-3.5 rounded-full bg-[#1A1817] text-white shadow-xl hover:scale-105 transition-all duration-300 border border-[#E8E2D5]"
         >
           <div className="relative">
-            <Sparkles className="w-6 h-6 animate-pulse" />
-            <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-400 border-2 border-slate-950 animate-ping" />
+            <Sparkles className="w-5 h-5 text-[#C59B27] animate-pulse" />
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[#C59B27] ring-2 ring-[#1A1817] animate-ping" />
           </div>
-          <span className="text-xs font-black tracking-wider uppercase pr-1.5 hidden sm:inline font-brand">
-            SFit Assistant
+          <span className="text-xs font-bold tracking-wider uppercase hidden sm:inline">
+            SFit Fashion Assistant
           </span>
         </button>
       )}
 
-      {/* SLIDE-UP CHAT PANEL (FRAMER MOTION ANIMATED) */}
+      {/* SLIDE-UP CHAT PANEL */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -59,39 +59,39 @@ export default function ChatbotWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 30, scale: 0.95 }}
             transition={{ duration: 0.25, ease: 'easeOut' }}
-            className="fixed bottom-0 right-0 sm:bottom-6 sm:right-6 z-50 w-full sm:w-[390px] h-[100dvh] sm:h-[580px] max-h-[100dvh] sm:max-h-[85vh] bg-white/95 dark:bg-slate-950/95 backdrop-blur-2xl border-0 sm:border border-slate-200 dark:border-slate-800 rounded-none sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden text-slate-900 dark:text-slate-100"
+            className="fixed bottom-0 right-0 sm:bottom-6 sm:right-6 z-50 w-full sm:w-[390px] h-[100dvh] sm:h-[580px] max-h-[100dvh] sm:max-h-[85vh] bg-white border-0 sm:border border-[#E8E2D5] rounded-none sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden text-[#1A1817]"
           >
             {/* PANEL HEADER */}
-            <div className="p-4 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
+            <div className="p-4 bg-[#FAF7F2] border-b border-[#E8E2D5] flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
-                <div className="relative w-9 h-9 rounded-2xl bg-gradient-to-tr from-indigo-600 to-pink-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/30 ring-1 ring-indigo-400/30">
-                  <Sparkles className="w-5 h-5 animate-pulse" />
-                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-white dark:ring-slate-900" />
+                <div className="relative w-9 h-9 rounded-full bg-[#1A1817] flex items-center justify-center text-white shadow-sm">
+                  <Sparkles className="w-4 h-4 text-[#C59B27]" />
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#C59B27] ring-2 ring-white" />
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <h4 className="font-brand font-black text-sm text-slate-900 dark:text-white tracking-tight">SFit Assistant</h4>
-                    <span className="text-[9px] font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/30">
+                    <h4 className="font-serif text-base font-bold text-[#1A1817] tracking-tight">SFit AI Stylist</h4>
+                    <span className="text-[9px] font-extrabold text-[#8C6D3F] bg-[#F4EFE6] px-1.5 py-0.2 rounded border border-[#E8E2D5]">
                       ONLINE
                     </span>
                   </div>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">AI Shopping & CM Size Helper</p>
+                  <p className="text-[10px] text-[#6E675F] font-semibold">Shopping & Size Calculator</p>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+              <div className="flex items-center gap-1 text-[#6E675F]">
                 <button
                   onClick={clearChatHistory}
                   title="Clear Chat History"
-                  className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-all text-xs"
+                  className="p-1.5 rounded-full hover:bg-white hover:text-[#1A1817] transition-all text-xs"
                 >
                   <RefreshCw className="w-4 h-4" />
                 </button>
                 <button
                   onClick={closeChat}
                   title="Close Assistant"
-                  className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-all text-xs"
+                  className="p-1.5 rounded-full hover:bg-white hover:text-[#1A1817] transition-all text-xs"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -99,16 +99,16 @@ export default function ChatbotWidget() {
             </div>
 
             {/* MESSAGES SCROLL AREA */}
-            <div className="flex-1 p-4 overflow-y-auto space-y-2 bg-gradient-to-b from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
+            <div className="flex-1 p-4 overflow-y-auto space-y-2 bg-[#FAF8F5]">
               {messages.map((msg) => (
                 <ChatMessage key={msg.id} message={msg} />
               ))}
 
               {/* TYPING INDICATOR */}
               {isTyping && (
-                <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400 text-xs py-2 px-3 bg-white dark:bg-slate-900/80 rounded-2xl w-fit border border-slate-200 dark:border-slate-800 shadow-sm animate-pulse">
-                  <Sparkles className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 animate-spin" />
-                  <span className="font-medium text-[11px]">SFit Assistant is thinking...</span>
+                <div className="flex items-center gap-2 text-[#6E675F] text-xs py-2 px-3 bg-white rounded-2xl w-fit border border-[#E8E2D5] shadow-sm animate-pulse">
+                  <Sparkles className="w-3.5 h-3.5 text-[#C59B27] animate-spin" />
+                  <span className="font-medium text-[11px]">SFit Stylist is finding recommendations...</span>
                 </div>
               )}
 
@@ -116,22 +116,22 @@ export default function ChatbotWidget() {
             </div>
 
             {/* INPUT BAR */}
-            <form onSubmit={handleSend} className="p-3 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0">
-              <div className="relative flex items-center bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl focus-within:border-indigo-500/60 transition-all shadow-sm">
+            <form onSubmit={handleSend} className="p-3 bg-[#FAF7F2] border-t border-[#E8E2D5] shrink-0">
+              <div className="relative flex items-center bg-white border border-[#E8E2D5] rounded-full focus-within:border-[#1A1817] transition-all shadow-sm">
                 <input
                   ref={inputRef}
                   type="text"
-                  placeholder="Ask SFit Assistant (e.g. Find size for 108 cm)..."
+                  placeholder="Ask SFit Stylist (e.g. Find Levi's under ₹2500)..."
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
-                  className="w-full bg-transparent pl-4 pr-12 py-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none"
+                  className="w-full bg-transparent pl-4 pr-12 py-3 text-xs text-[#1A1817] placeholder-[#9E968B] focus:outline-none"
                 />
                 <button
                   type="submit"
                   disabled={!inputText.trim()}
-                  className="absolute right-2 p-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:hover:bg-indigo-600 text-white transition-all shadow-md shadow-indigo-600/30"
+                  className="absolute right-1.5 p-2 rounded-full bg-[#1A1817] hover:bg-[#2D2A26] disabled:opacity-40 text-white transition-all shadow-sm"
                 >
-                  <Send className="w-3.5 h-3.5" />
+                  <Send className="w-3.5 h-3.5 text-[#C59B27]" />
                 </button>
               </div>
             </form>

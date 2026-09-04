@@ -12,49 +12,49 @@ export default function Navbar() {
   const totalCartItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-800/80 bg-slate-950/85 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-[#E8E2D5] bg-[#FAF8F5]/90 backdrop-blur-md transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         
-        {/* Stylish Brand Logo: SFit */}
+        {/* Luxury Fashion Brand Logo: SFit */}
         <Link to="/" className="flex items-center gap-3 group">
-          <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/30 group-hover:scale-105 transition-transform duration-300 ring-2 ring-indigo-500/30">
-            <Sparkles className="w-6 h-6 text-white animate-pulse" />
+          <div className="w-10 h-10 rounded-full bg-[#1A1817] flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-300">
+            <Sparkles className="w-5 h-5 text-[#C59B27]" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-brand text-3xl font-black tracking-tight bg-gradient-to-r from-white via-indigo-200 to-pink-400 bg-clip-text text-transparent">
+              <span className="font-serif text-3xl font-bold tracking-tight text-[#1A1817]">
                 SFit
               </span>
-              <span className="text-[10px] font-black tracking-widest uppercase bg-gradient-to-r from-indigo-500/20 to-purple-500/20 text-indigo-300 px-2.5 py-0.5 rounded-full border border-indigo-500/40 shadow-sm">
-                3D AI
+              <span className="text-[9px] font-black tracking-widest uppercase bg-[#F4EFE6] text-[#8C6D3F] px-2 py-0.5 rounded-full border border-[#E8E2D5]">
+                AI FASHION
               </span>
             </div>
-            <p className="text-[10px] text-slate-400 font-semibold tracking-wider uppercase">Virtual Garment Fitting</p>
+            <p className="text-[9px] text-[#6E675F] font-medium tracking-widest uppercase">Virtual Fitting Studio</p>
           </div>
         </Link>
 
         {/* Navigation Links */}
-        <nav className="hidden md:flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800">
+        <nav className="hidden md:flex items-center gap-2 bg-[#F4EFE6] p-1.5 rounded-full border border-[#E8E2D5]">
           <Link
             to="/"
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold transition-all duration-200 ${
+            className={`flex items-center gap-2 px-5 py-2 rounded-full text-xs font-bold transition-all duration-200 ${
               location.pathname === '/' 
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' 
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                ? 'bg-[#1A1817] text-white shadow-md' 
+                : 'text-[#57524A] hover:text-[#1A1817] hover:bg-white/60'
             }`}
           >
-            <Shirt className="w-4 h-4" /> Garment Catalog
+            <Shirt className="w-3.5 h-3.5" /> Garment Catalog
           </Link>
 
           <Link
             to="/capture"
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold transition-all duration-200 ${
+            className={`flex items-center gap-2 px-5 py-2 rounded-full text-xs font-bold transition-all duration-200 ${
               location.pathname.startsWith('/capture') || location.pathname.startsWith('/fitting') || location.pathname.startsWith('/result')
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' 
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                ? 'bg-[#1A1817] text-white shadow-md' 
+                : 'text-[#57524A] hover:text-[#1A1817] hover:bg-white/60'
             }`}
           >
-            <Layers className="w-4 h-4" /> Try-On Studio
+            <Layers className="w-3.5 h-3.5" /> Try-On Studio
           </Link>
         </nav>
 
@@ -64,14 +64,14 @@ export default function Navbar() {
           {/* User Status / Login / Logout */}
           {isAuthenticated ? (
             <div className="flex items-center gap-2">
-              <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-slate-300 bg-slate-900 px-3 py-2 rounded-xl border border-slate-800 shadow-sm max-w-[180px] truncate" title={user?.email || user?.name}>
-                <User className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+              <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-[#2D2A26] bg-[#F4EFE6] px-3.5 py-2 rounded-full border border-[#E8E2D5] max-w-[180px] truncate" title={user?.email || user?.name}>
+                <User className="w-3.5 h-3.5 text-[#8C6D3F] shrink-0" />
                 <span className="truncate">{user?.email || user?.name || 'My Account'}</span>
               </span>
               <button
                 onClick={logout}
                 title="Log Out"
-                className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500 hover:text-white transition-all duration-200 shadow-sm"
+                className="p-2.5 rounded-full bg-[#F4EFE6] border border-[#E8E2D5] text-[#6E675F] hover:bg-rose-50 hover:text-rose-600 transition-all duration-200 shadow-sm"
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -79,22 +79,22 @@ export default function Navbar() {
           ) : (
             <Link
               to="/login"
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black shadow-md shadow-indigo-600/30 transition-all duration-200"
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-[#1A1817] hover:bg-[#2D2A26] text-white text-xs font-bold shadow-md transition-all duration-200"
             >
-              <User className="w-4 h-4" />
-              <span>Login</span>
+              <User className="w-3.5 h-3.5 text-[#C59B27]" />
+              <span>Sign In</span>
             </Link>
           )}
 
           {/* Bag Button */}
           <Link
             to="/checkout"
-            className="relative flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 hover:border-indigo-500/50 hover:text-white transition-all duration-200"
+            className="relative flex items-center gap-2 px-4 py-2.5 rounded-full bg-white border border-[#E8E2D5] text-[#1A1817] hover:border-[#1A1817] transition-all duration-200 shadow-sm"
           >
-            <ShoppingBag className="w-5 h-5 text-indigo-400" />
-            <span className="text-xs font-extrabold hidden sm:inline">Bag</span>
+            <ShoppingBag className="w-4 h-4 text-[#8C6D3F]" />
+            <span className="text-xs font-bold hidden sm:inline">Bag</span>
             {totalCartItems > 0 && (
-              <span className="flex items-center justify-center bg-indigo-600 text-white text-xs font-bold w-5 h-5 rounded-full shadow-md shadow-indigo-600/40">
+              <span className="flex items-center justify-center bg-[#1A1817] text-white text-[11px] font-bold w-5 h-5 rounded-full shadow-sm">
                 {totalCartItems}
               </span>
             )}
