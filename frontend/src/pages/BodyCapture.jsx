@@ -1,36 +1,43 @@
-// FILE: frontend/src/pages/BodyCapture.jsx
 import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Webcam from 'react-webcam';
 import { motion } from 'framer-motion';
-import { Camera, Upload, CheckCircle2, RotateCcw, Sparkles, ArrowRight, ShieldCheck, Image as ImageIcon, Ruler, UserCheck } from 'lucide-react';
+import { Camera, Upload, CheckCircle2, RotateCcw, Sparkles, ArrowRight, ShieldCheck, Image as ImageIcon, Ruler, UserCheck, AlertCircle, ShoppingBag } from 'lucide-react';
 import ProgressStepper from '../components/ProgressStepper';
 import PoseGuideOverlay from '../components/PoseGuideOverlay';
 import CmMeasurementForm from '../components/CmMeasurementForm';
 import { useTryOn } from '../context/TryOnContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function BodyCapture() {
   const navigate = useNavigate();
   const webcamRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  const { selectedProduct, capturedImages, updateCapturedAngle, userMeasurements, updateUserMeasurements, setActiveStep } = useTryOn();
+  const { user } = useAuth();
+  const { selectedProduct, capturedImages, updateCapturedAngle, userMeasurements, updateUserMeasurements, tagCapturedDataWithUser, setActiveStep } = useTryOn();
 
   const [useWebcam, setUseWebcam] = useState(true);
   const [cameraError, setCameraError] = useState(false);
   const [showCmModal, setShowCmModal] = useState(false);
+  const [validationError, setValidationError] = useState('');
 
   useEffect(() => {
     setActiveStep(2);
-  }, []);
+    if (user?.id) {
+      tagCapturedDataWithUser(user.id);
+    }
+  }, [user]);
 
   const hasPhoto = Boolean(capturedImages.front);
+  const hasGarment = Boolean(selectedProduct && (selectedProduct.image || selectedProduct.overlayImage));
 
   const captureWebcamPhoto = () => {
     if (webcamRef.current) {
       const imageSrc = webcamRef.current.getScreenshot();
       if (imageSrc) {
-        updateCapturedAngle('front', imageSrc);
+        updateCapturedAngle('front', imageSrc, user?.id);
+        setValidationError('');
       }
     } else {
       createMockPhoto();
@@ -70,7 +77,8 @@ export default function BodyCapture() {
     ctx.fillText('USER PHOTO: FRONT VIEW', 200, 400);
 
     const mockDataUrl = canvas.toDataURL('image/jpeg');
-    updateCapturedAngle('front', mockDataUrl);
+    updateCapturedAngle('front', mockDataUrl, user?.id);
+    setValidationError('');
   };
 
   const handleFileUpload = (e) => {
@@ -78,13 +86,29 @@ export default function BodyCapture() {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        updateCapturedAngle('front', reader.result);
+        updateCapturedAngle('front', reader.result, user?.id);
+        setValidationError('');
       };
       reader.readAsDataURL(file);
     }
   };
 
   const handleProceedToFitting = () => {
+    setValidationError('');
+
+    if (!hasPhoto) {
+      setValidationError('Please upload or snap a front-facing photo first.');
+      return;
+    }
+
+    if (!hasGarment) {
+      setValidationError('Garment image is missing. Please select a garment from catalog or paste a product link.');
+      return;
+    }
+
+    if (user?.id) {
+      tagCapturedDataWithUser(user.id);
+    }
     navigate('/fitting');
   };
 
@@ -97,12 +121,30 @@ export default function BodyCapture() {
     >
       <ProgressStepper activeStep={2} />
 
+      {/* Validation Error Banner if inputs missing */}
+      {validationError && (
+        <div className="bg-[#FFF8F6] border border-[#F5C2B8] p-4 rounded-2xl mb-6 flex items-center justify-between gap-4 text-xs text-[#B85C38] font-medium shadow-sm">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{validationError}</span>
+          </div>
+          {!hasGarment && (
+            <button
+              onClick={() => navigate('/')}
+              className="px-4 py-1.5 rounded-full bg-[#1A1817] text-white font-bold text-xs shrink-0 flex items-center gap-1.5"
+            >
+              <ShoppingBag className="w-3.5 h-3.5 text-[#C59B27]" /> Select Garment
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Selected Garment Preview Banner */}
-      {selectedProduct && (
+      {selectedProduct ? (
         <div className="bg-white border border-[#E8E2D5] p-4 rounded-2xl mb-6 flex items-center justify-between gap-4 shadow-sm">
           <div className="flex items-center gap-3.5">
             <img
-              src={selectedProduct.image}
+              src={selectedProduct.image || selectedProduct.overlayImage}
               alt={selectedProduct.name}
               className="w-12 h-14 object-contain rounded-xl bg-[#FAF7F2] p-1 border border-[#E8E2D5]"
             />
@@ -111,7 +153,7 @@ export default function BodyCapture() {
                 <span className="text-[10px] font-bold uppercase text-[#8C6D3F] bg-[#F4EFE6] px-2 py-0.5 rounded border border-[#E8E2D5]">
                   {selectedProduct.platform || 'Selected Garment'}
                 </span>
-                <span className="text-xs text-[#6E675F]">Category: {selectedProduct.garmentType || selectedProduct.category}</span>
+                <span className="text-xs text-[#6E675F]">Category: {selectedProduct.garmentType || selectedProduct.category || 'Upper Body'}</span>
               </div>
               <h4 className="font-serif text-base font-bold text-[#1A1817] line-clamp-1 mt-0.5">{selectedProduct.name}</h4>
             </div>
@@ -121,6 +163,22 @@ export default function BodyCapture() {
             className="text-xs text-[#1A1817] hover:text-[#8C6D3F] font-bold bg-[#FAF7F2] hover:bg-[#F4EFE6] px-4 py-2 rounded-full border border-[#E8E2D5] transition-all shrink-0"
           >
             Change Link / Garment
+          </button>
+        </div>
+      ) : (
+        <div className="bg-[#FAF7F2] border border-[#E8E2D5] p-4 rounded-2xl mb-6 flex items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <ShoppingBag className="w-5 h-5 text-[#8C6D3F]" />
+            <div>
+              <h4 className="font-serif text-sm font-bold text-[#1A1817]">No Garment Selected Yet</h4>
+              <p className="text-xs text-[#6E675F]">Select clothing from catalog or paste product link before virtual try-on.</p>
+            </div>
+          </div>
+          <button
+            onClick={() => navigate('/')}
+            className="text-xs text-white font-bold bg-[#1A1817] hover:bg-[#2D2A26] px-4 py-2 rounded-full transition-all shrink-0 flex items-center gap-1.5"
+          >
+            <ShoppingBag className="w-3.5 h-3.5 text-[#C59B27]" /> Browse Catalog
           </button>
         </div>
       )}
@@ -285,15 +343,19 @@ export default function BodyCapture() {
           <div className="bg-white p-6 rounded-3xl border border-[#E8E2D5] shadow-sm">
             <button
               onClick={handleProceedToFitting}
-              disabled={!hasPhoto}
+              disabled={!hasPhoto || !hasGarment}
               className={`w-full flex items-center justify-center gap-2 py-4 px-6 rounded-full font-bold text-sm transition-all duration-300 ${
-                hasPhoto
+                hasPhoto && hasGarment
                   ? 'bg-[#1A1817] hover:bg-[#2D2A26] text-white shadow-md active:scale-[0.98]'
                   : 'bg-[#FAF7F2] text-[#9E968B] cursor-not-allowed border border-[#E8E2D5]'
               }`}
             >
               <Sparkles className="w-4 h-4 text-[#C59B27]" />
-              {hasPhoto ? `Drape Outfit on My Photo (${userMeasurements?.userSize || 'L'})` : 'Capture Front Photo First'}
+              {!hasGarment
+                ? 'Select a Garment First'
+                : !hasPhoto
+                ? 'Capture Front Photo First'
+                : `Drape Outfit on My Photo (${userMeasurements?.userSize || 'L'})`}
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

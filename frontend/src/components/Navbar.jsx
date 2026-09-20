@@ -1,21 +1,26 @@
-// FILE: frontend/src/components/Navbar.jsx
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Sparkles, ShoppingBag, Shirt, Layers, User, LogOut } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Sparkles, ShoppingBag, Shirt, Layers, User, LogOut, LogIn } from 'lucide-react';
 import { useTryOn } from '../context/TryOnContext';
 import { useAuth } from '../context/AuthContext';
 
 export default function Navbar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { cart } = useTryOn();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const totalCartItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b border-[#E8E2D5] bg-[#FAF8F5]/90 backdrop-blur-md transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         
-        {/* Luxury Fashion Brand Logo: SFit */}
+        {/* Luxury Fashion Brand Logo: TrueFit */}
         <Link to="/" className="flex items-center gap-3 group">
           <div className="w-10 h-10 rounded-full bg-[#1A1817] flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-300">
             <Sparkles className="w-5 h-5 text-[#C59B27]" />
@@ -23,7 +28,7 @@ export default function Navbar() {
           <div>
             <div className="flex items-center gap-2">
               <span className="font-serif text-3xl font-bold tracking-tight text-[#1A1817]">
-                SFit
+                TrueFit
               </span>
               <span className="text-[9px] font-black tracking-widest uppercase bg-[#F4EFE6] text-[#8C6D3F] px-2 py-0.5 rounded-full border border-[#E8E2D5]">
                 AI FASHION
@@ -62,14 +67,14 @@ export default function Navbar() {
         <div className="flex items-center gap-3">
           
           {/* User Status / Login / Logout */}
-          {isAuthenticated ? (
+          {user ? (
             <div className="flex items-center gap-2">
-              <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-[#2D2A26] bg-[#F4EFE6] px-3.5 py-2 rounded-full border border-[#E8E2D5] max-w-[180px] truncate" title={user?.email || user?.name}>
+              <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-[#2D2A26] bg-[#F4EFE6] px-3.5 py-2 rounded-full border border-[#E8E2D5] max-w-[180px] truncate" title={user?.email}>
                 <User className="w-3.5 h-3.5 text-[#8C6D3F] shrink-0" />
-                <span className="truncate">{user?.email || user?.name || 'My Account'}</span>
+                <span className="truncate">{user?.email}</span>
               </span>
               <button
-                onClick={logout}
+                onClick={handleLogout}
                 title="Log Out"
                 className="p-2.5 rounded-full bg-[#F4EFE6] border border-[#E8E2D5] text-[#6E675F] hover:bg-rose-50 hover:text-rose-600 transition-all duration-200 shadow-sm"
               >
@@ -81,8 +86,8 @@ export default function Navbar() {
               to="/login"
               className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-[#1A1817] hover:bg-[#2D2A26] text-white text-xs font-bold shadow-md transition-all duration-200"
             >
-              <User className="w-3.5 h-3.5 text-[#C59B27]" />
-              <span>Sign In</span>
+              <LogIn className="w-3.5 h-3.5 text-[#C59B27]" />
+              <span>Log In</span>
             </Link>
           )}
 

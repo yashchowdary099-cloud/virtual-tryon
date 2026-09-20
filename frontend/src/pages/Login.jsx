@@ -1,95 +1,62 @@
-// FILE: frontend/src/pages/Login.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Key, Mail, Sparkles, AlertCircle, CheckCircle2, Lock, ArrowRight, RotateCw, ArrowLeft } from 'lucide-react';
+import { Mail, ShieldCheck, Lock, AlertCircle, CheckCircle2, ArrowRight, RotateCw, KeyRound, RefreshCw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { sendOtp, verifyOtp } from '../api/auth';
 
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { user, sendEmailOtp, verifyEmailOtp } = useAuth();
 
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
-  const [step, setStep] = useState(1); // 1 = Email Input, 2 = OTP Input
+  const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [resending, setResending] = useState(false);
-  const [cooldown, setCooldown] = useState(0);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [cooldown, setCooldown] = useState(0);
 
-  const redirectPath = location.state?.from || '/';
+  // Destination path after login
+  const redirectPath = location.state?.from || '/capture';
+  const savedProduct = location.state?.product;
 
-  // Countdown timer for Resend OTP cooldown
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate(redirectPath, { replace: true, state: { product: savedProduct } });
+    }
+  }, [user, navigate, redirectPath, savedProduct]);
+
+  // Cooldown timer effect for Resend OTP
   useEffect(() => {
     let timer;
     if (cooldown > 0) {
-      timer = setInterval(() => {
-        setCooldown((prev) => (prev > 0 ? prev - 1 : 0));
-      }, 1000);
+      timer = setInterval(() => setCooldown((prev) => prev - 1), 1000);
     }
     return () => clearInterval(timer);
   }, [cooldown]);
-
-  const isValidEmailFormat = (val) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim());
-  };
 
   const handleSendOtp = async (e) => {
     if (e) e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
 
-    if (!email || !isValidEmailFormat(email)) {
-      setErrorMsg('Please enter a valid email address (e.g. yourname@gmail.com).');
+    if (!email || !email.includes('@')) {
+      setErrorMsg('Please enter a valid email address.');
       return;
     }
 
     try {
       setLoading(true);
-      const res = await sendOtp(email.trim());
+      await sendEmailOtp(email);
       setLoading(false);
-
-      if (res.success) {
-        setStep(2);
-        setCooldown(res.cooldownSeconds || 60);
-        setSuccessMsg(res.message || `Verification code sent to ${email.trim()}! Please check your inbox.`);
-      } else {
-        if (res.retryAfterSeconds) {
-          setCooldown(res.retryAfterSeconds);
-        }
-        setErrorMsg(res.message || 'Failed to send verification email. Please try again.');
-      }
+      setOtpSent(true);
+      setCooldown(30);
+      setSuccessMsg(`A 6-digit OTP security code has been sent to ${email.trim()}.`);
     } catch (err) {
       setLoading(false);
-      setErrorMsg('Network error. Failed to reach the authentication server.');
-    }
-  };
-
-  const handleResendOtp = async () => {
-    if (cooldown > 0 || resending) return;
-    setErrorMsg('');
-    setSuccessMsg('');
-
-    try {
-      setResending(true);
-      const res = await sendOtp(email.trim());
-      setResending(false);
-
-      if (res.success) {
-        setCooldown(res.cooldownSeconds || 60);
-        setSuccessMsg(`New verification code sent to ${email.trim()}!`);
-      } else {
-        if (res.retryAfterSeconds) {
-          setCooldown(res.retryAfterSeconds);
-        }
-        setErrorMsg(res.message || 'Could not resend OTP at this moment.');
-      }
-    } catch (err) {
-      setResending(false);
-      setErrorMsg('Network error while resending verification code.');
+      setErrorMsg(err.message || 'Failed to send OTP code. Please verify your email.');
     }
   };
 
@@ -98,30 +65,22 @@ export default function Login() {
     setErrorMsg('');
     setSuccessMsg('');
 
-    const cleanOtp = otp.trim();
-    if (!cleanOtp || !/^\d{6}$/.test(cleanOtp)) {
-      setErrorMsg('Please enter the complete 6-digit verification code.');
+    if (!otp || otp.trim().length < 6) {
+      setErrorMsg('Please enter the full 6-digit OTP code.');
       return;
     }
 
     try {
       setLoading(true);
-      const res = await verifyOtp(email.trim(), cleanOtp);
+      await verifyEmailOtp(email, otp);
       setLoading(false);
-
-      if (res.success) {
-        login(res.user, res.token);
-        setSuccessMsg('Verification successful! Welcome to SFit...');
-        
-        setTimeout(() => {
-          navigate(redirectPath, { replace: true });
-        }, 800);
-      } else {
-        setErrorMsg(res.message || 'Invalid or expired verification code.');
-      }
+      setSuccessMsg('Authentication successful! Redirecting to TrueFit Studio...');
+      setTimeout(() => {
+        navigate(redirectPath, { replace: true, state: { product: savedProduct } });
+      }, 600);
     } catch (err) {
       setLoading(false);
-      setErrorMsg('Network error. Failed to connect to the verification server.');
+      setErrorMsg(err.message || 'Invalid or expired OTP code. Please check and try again.');
     }
   };
 
@@ -141,10 +100,12 @@ export default function Login() {
             <Lock className="w-6 h-6 text-[#C59B27]" />
           </div>
           <h2 className="font-serif text-3xl font-bold text-[#1A1817] tracking-tight">
-            SFit <span className="text-[#8C6D3F]">Member Login</span>
+            TrueFit <span className="text-[#8C6D3F]">Email OTP Login</span>
           </h2>
           <p className="text-xs text-[#6E675F] mt-1.5 leading-relaxed">
-            Sign in with email OTP to access your fitting studio, body measurements & virtual try-ons.
+            {otpSent
+              ? `Enter the 6-digit verification code sent to ${email}`
+              : 'Sign in passwordlessly to access your fitting studio & 3D body scans.'}
           </p>
         </div>
 
@@ -175,19 +136,20 @@ export default function Login() {
           )}
         </AnimatePresence>
 
-        {/* Step 1: Email Input Form */}
-        {step === 1 ? (
-          <form onSubmit={handleSendOtp} className="space-y-6">
+        {/* Input Form */}
+        {!otpSent ? (
+          /* STEP 1: Email Input Form */
+          <form onSubmit={handleSendOtp} className="space-y-5">
             <div>
               <label htmlFor="email" className="block text-[11px] font-extrabold text-[#8C6D3F] uppercase tracking-widest mb-2">
-                Gmail / Email Address
+                Email Address
               </label>
               <div className="relative flex items-center bg-[#FAF8F5] border border-[#E8E2D5] rounded-2xl focus-within:border-[#1A1817] focus-within:bg-white transition-all shadow-inner">
                 <Mail className="w-4 h-4 text-[#9E968B] absolute left-4" />
                 <input
                   id="email"
                   type="email"
-                  placeholder="yourname@gmail.com"
+                  placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-transparent pl-11 pr-4 py-3.5 text-xs text-[#1A1817] placeholder-[#9E968B] focus:outline-none font-medium"
@@ -198,47 +160,36 @@ export default function Login() {
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-4 rounded-full bg-[#1A1817] hover:bg-[#2D2A26] text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md active:scale-[0.98] transition-all disabled:opacity-50"
-            >
-              {loading ? (
-                <>
-                  <RotateCw className="w-4 h-4 animate-spin text-white" />
-                  Sending Security Code...
-                </>
-              ) : (
-                <>
-                  Send OTP Code
-                  <ArrowRight className="w-4 h-4 text-[#C59B27]" />
-                </>
-              )}
-            </button>
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-4 rounded-full bg-[#1A1817] hover:bg-[#2D2A26] text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md active:scale-[0.98] transition-all disabled:opacity-50"
+              >
+                {loading ? (
+                  <>
+                    <RotateCw className="w-4 h-4 animate-spin text-white" />
+                    Sending OTP Code...
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="w-4 h-4 text-[#C59B27]" />
+                    Send OTP Code
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </div>
           </form>
         ) : (
-          /* Step 2: 6-Digit OTP Verification Form */
-          <form onSubmit={handleVerifyOtp} className="space-y-6">
+          /* STEP 2: 6-Digit OTP Verification Form */
+          <form onSubmit={handleVerifyOtp} className="space-y-5">
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label htmlFor="otp" className="block text-[11px] font-extrabold text-[#8C6D3F] uppercase tracking-widest">
-                  6-Digit OTP Code
-                </label>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStep(1);
-                    setErrorMsg('');
-                    setSuccessMsg('');
-                  }}
-                  className="text-[11px] text-[#6E675F] hover:text-[#1A1817] font-semibold flex items-center gap-1"
-                >
-                  <ArrowLeft className="w-3 h-3" /> Change Email
-                </button>
-              </div>
-
+              <label htmlFor="otp" className="block text-[11px] font-extrabold text-[#8C6D3F] uppercase tracking-widest mb-2">
+                6-Digit Security OTP Code
+              </label>
               <div className="relative flex items-center bg-[#FAF8F5] border border-[#E8E2D5] rounded-2xl focus-within:border-[#1A1817] focus-within:bg-white transition-all shadow-inner">
-                <Key className="w-4 h-4 text-[#9E968B] absolute left-4" />
+                <KeyRound className="w-4 h-4 text-[#9E968B] absolute left-4" />
                 <input
                   id="otp"
                   type="text"
@@ -246,54 +197,63 @@ export default function Login() {
                   placeholder="123456"
                   value={otp}
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                  className="w-full bg-transparent pl-11 pr-4 py-3.5 text-base tracking-[0.3em] font-mono text-[#1A1817] placeholder-[#9E968B] focus:outline-none"
+                  className="w-full bg-transparent pl-11 pr-4 py-3.5 text-sm tracking-widest font-mono text-[#1A1817] placeholder-[#9E968B] focus:outline-none font-bold"
                   disabled={loading}
-                  autoComplete="one-time-code"
+                  autoFocus
                   required
                 />
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-xs text-[#6E675F]">
-              <span>Didn't receive code?</span>
+            <div className="pt-2 space-y-3">
               <button
-                type="button"
-                onClick={handleResendOtp}
-                disabled={cooldown > 0 || resending}
-                className="font-bold text-[#8C6D3F] hover:text-[#1A1817] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                type="submit"
+                disabled={loading || otp.length < 6}
+                className="w-full py-4 rounded-full bg-[#1A1817] hover:bg-[#2D2A26] text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md active:scale-[0.98] transition-all disabled:opacity-50"
               >
-                {resending ? (
-                  <RotateCw className="w-3 h-3 animate-spin" />
-                ) : cooldown > 0 ? (
-                  `Resend in ${cooldown}s`
+                {loading ? (
+                  <>
+                    <RotateCw className="w-4 h-4 animate-spin text-white" />
+                    Verifying Code...
+                  </>
                 ) : (
-                  'Resend OTP'
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-[#C59B27]" />
+                    Verify OTP & Log In
+                    <ArrowRight className="w-4 h-4" />
+                  </>
                 )}
               </button>
-            </div>
 
-            <button
-              type="submit"
-              disabled={loading || otp.length < 6}
-              className="w-full py-4 rounded-full bg-[#1A1817] hover:bg-[#2D2A26] text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md active:scale-[0.98] transition-all disabled:opacity-50"
-            >
-              {loading ? (
-                <>
-                  <RotateCw className="w-4 h-4 animate-spin text-white" />
-                  Verifying...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 text-[#C59B27]" />
-                  Verify & Enter SFit
-                </>
-              )}
-            </button>
+              <div className="flex items-center justify-between text-xs pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOtpSent(false);
+                    setOtp('');
+                    setErrorMsg('');
+                  }}
+                  className="text-[#6E675F] hover:text-[#1A1817] underline font-medium"
+                >
+                  Change Email
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSendOtp}
+                  disabled={cooldown > 0 || loading}
+                  className="text-[#8C6D3F] hover:text-[#1A1817] font-bold flex items-center gap-1 disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                  {cooldown > 0 ? `Resend OTP in ${cooldown}s` : 'Resend OTP'}
+                </button>
+              </div>
+            </div>
           </form>
         )}
 
         <div className="mt-8 pt-6 border-t border-[#E8E2D5] text-center text-xs text-[#6E675F]">
-          By continuing, you agree to SFit's <span className="underline cursor-pointer hover:text-[#1A1817]">Terms of Service</span> and <span className="underline cursor-pointer hover:text-[#1A1817]">Privacy Policy</span>.
+          By continuing, you agree to TrueFit's <span className="underline cursor-pointer hover:text-[#1A1817]">Terms of Service</span> and <span className="underline cursor-pointer hover:text-[#1A1817]">Privacy Policy</span>.
         </div>
       </motion.div>
     </div>

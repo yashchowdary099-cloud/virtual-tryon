@@ -1,53 +1,116 @@
-// FILE: frontend/src/context/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../lib/supabaseClient';
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
+  const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Load session from localStorage on startup
-    const storedUser = localStorage.getItem('sfit_user');
-    const storedToken = localStorage.getItem('sfit_token');
-    
-    if (storedUser && storedToken) {
-      setUser(JSON.parse(storedUser));
-      setToken(storedToken);
+    let isMounted = true;
+
+    async function initAuth() {
+      try {
+        const { data: { session: sbSession } } = await supabase.auth.getSession();
+        if (sbSession && isMounted) {
+          setSession(sbSession);
+          setUser(sbSession.user ?? null);
+        }
+      } catch (err) {
+        console.warn('[Supabase Auth Warning] Could not fetch session:', err?.message);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
     }
-    setLoading(false);
+
+    initAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, sbSession) => {
+      setSession(sbSession);
+      setUser(sbSession?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => {
+      isMounted = false;
+      subscription?.unsubscribe();
+    };
   }, []);
 
-  const login = (userData, userToken) => {
-    setUser(userData);
-    setToken(userToken);
-    localStorage.setItem('sfit_user', JSON.stringify(userData));
-    localStorage.setItem('sfit_token', userToken);
+  /**
+   * Send 6-digit OTP code to user's email via Supabase Auth
+   */
+  const sendEmailOtp = async (email) => {
+    const cleanEmail = email.trim();
+    const { data, error } = await supabase.auth.signInWithOtp({
+      email: cleanEmail,
+      options: {
+        shouldCreateUser: true
+      }
+    });
+
+    if (error) {
+      throw new Error(error.message || 'Failed to send OTP email.');
+    }
+    return data;
   };
 
-  const logout = () => {
+  /**
+   * Verify the 6-digit OTP code entered by user
+   */
+  const verifyEmailOtp = async (email, token) => {
+    const cleanEmail = email.trim();
+    const cleanToken = token.trim();
+
+    const { data, error } = await supabase.auth.verifyOtp({
+      email: cleanEmail,
+      token: cleanToken,
+      type: 'email'
+    });
+
+    if (error) {
+      throw new Error(error.message || 'Invalid or expired OTP code. Please try again.');
+    }
+
+    if (data?.session) {
+      setSession(data.session);
+      setUser(data.user);
+    }
+    return data;
+  };
+
+  /**
+   * Sign out user and clear Supabase session
+   */
+  const signOut = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.warn('[Supabase Auth Warning] SignOut failed:', err?.message);
+    }
     setUser(null);
-    setToken(null);
-    localStorage.removeItem('sfit_user');
-    localStorage.removeItem('sfit_token');
+    setSession(null);
   };
 
-  const isAuthenticated = !!token;
+  const value = {
+    user,
+    session,
+    loading,
+    signOut,
+    sendEmailOtp,
+    verifyEmailOtp,
+    isAuthenticated: !!user
+  };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        token,
-        isAuthenticated,
-        login,
-        logout,
-        loading
-      }}
-    >
-      {!loading && children}
+    <AuthContext.Provider value={value}>
+      {!loading ? children : (
+        <div className="min-h-screen flex items-center justify-center bg-[#FAF8F5]">
+          <div className="w-8 h-8 border-4 border-[#1A1817] border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
     </AuthContext.Provider>
   );
 }

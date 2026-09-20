@@ -4,6 +4,20 @@
     "email": "yashchowdary099@gmail.com",
     "name": "Yashchowdary099",
     "createdAt": "2026-09-01T09:34:40.565Z",
-    "lastLoginAt": "2026-09-01T09:57:27.071Z"
+    "lastLoginAt": "2026-09-19T17:07:12.573Z"
+  },
+  {
+    "id": "usr_1789837481421",
+    "email": "testuser@truefit.ai",
+    "name": "Testuser",
+    "createdAt": "2026-09-19T17:04:41.421Z",
+    "lastLoginAt": "2026-09-19T17:04:41.421Z"
+  },
+  {
+    "id": "usr_1789837498277",
+    "email": "newuser@truefit.ai",
+    "name": "New User",
+    "createdAt": "2026-09-19T17:04:58.277Z",
+    "lastLoginAt": "2026-09-19T17:04:58.277Z"
   }
 ]

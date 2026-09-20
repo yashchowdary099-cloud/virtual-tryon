@@ -1,18 +1,23 @@
-// FILE: frontend/src/components/ProductCard.jsx
 import React from 'react';
 import { Sparkles, Star, ShoppingBag, Check, Tag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTryOn } from '../context/TryOnContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function ProductCard({ product }) {
   const navigate = useNavigate();
   const { selectProductForTryOn, addToCart, cart } = useTryOn();
+  const { user } = useAuth();
 
   const isAlreadyInCart = cart.some(item => item.id === product.id);
 
   const handleTryOn = () => {
     selectProductForTryOn(product);
-    navigate('/capture');
+    if (!user) {
+      navigate('/login', { state: { from: '/capture', product } });
+    } else {
+      navigate('/capture');
+    }
   };
 
   const handleAddToCart = (e) => {

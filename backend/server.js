@@ -27,15 +27,13 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Health Check API
 app.get('/api/health', (req, res) => {
-  const token = process.env.REPLICATE_API_TOKEN || '';
-  const isConfigured = token && !token.includes('your_replicate');
-  const maskedToken = isConfigured ? `${token.substring(0, 5)}...${token.substring(token.length - 4)}` : 'NOT CONFIGURED (Placeholder)';
+  const supabaseUrl = process.env.SUPABASE_URL || '';
+  const isSupabaseConfigured = Boolean(supabaseUrl && !supabaseUrl.includes('placeholder'));
 
   res.json({
     status: 'online',
-    app: 'SFit Virtual Try-On & AI Assistant API',
-    replicateApiTokenStatus: isConfigured ? 'Valid Format Loaded' : 'Missing / Placeholder',
-    replicateTokenMasked: maskedToken,
+    app: 'TrueFit Virtual Try-On & AI Assistant API',
+    supabaseAuth: isSupabaseConfigured ? 'Configured' : 'Missing / Placeholder in backend/.env',
     timestamp: new Date().toISOString()
   });
 });
@@ -48,24 +46,25 @@ app.use('/api/chatbot', chatbotRoute);
 app.use('/api/auth', authRoute);
 app.use('/api/extract-url', extractUrlRoute);
 
-// Start Server
-app.listen(PORT, () => {
-  const token = process.env.REPLICATE_API_TOKEN || '';
-  const isConfigured = token && !token.includes('your_replicate');
-  const maskedToken = isConfigured ? `${token.substring(0, 5)}...${token.substring(token.length - 4)}` : '❌ NOT CONFIGURED (Using Placeholder)';
-
-  const resendKey = process.env.RESEND_API_KEY || '';
-  const isResendConfigured = resendKey && !resendKey.includes('your_resend') && resendKey.startsWith('re_');
-  const maskedResend = isResendConfigured ? `${resendKey.substring(0, 5)}...${resendKey.substring(resendKey.length - 4)}` : '❌ NOT CONFIGURED (Add RESEND_API_KEY in .env)';
+const server = app.listen(PORT, () => {
+  const supabaseUrl = process.env.SUPABASE_URL || '';
+  const isSupabaseConfigured = Boolean(supabaseUrl && !supabaseUrl.includes('placeholder'));
 
   console.log(`===================================================`);
-  console.log(` 🚀 SFit Backend Server Running on Port ${PORT}`);
-  console.log(` 🔑 REPLICATE_API_TOKEN: ${maskedToken}`);
-  console.log(` 📧 RESEND_API_KEY:      ${maskedResend}`);
+  console.log(` 🚀 TrueFit Backend Server Running on Port ${PORT}`);
+  console.log(` 🔐 SUPABASE_AUTH:       ${isSupabaseConfigured ? 'Configured' : '❌ NOT CONFIGURED (Add SUPABASE_URL & SUPABASE_SERVICE_ROLE_KEY in .env)'}`);
   console.log(` 🌐 Health check: http://localhost:${PORT}/api/health`);
   console.log(` 📦 Product API:  http://localhost:${PORT}/api/products`);
   console.log(` 👔 Try-On API:   http://localhost:${PORT}/api/try-on`);
   console.log(` 🤖 Chatbot API:  http://localhost:${PORT}/api/chatbot`);
-  console.log(` 🔑 Auth API:     http://localhost:${PORT}/api/auth`);
   console.log(` ===================================================`);
+});
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\n❌ [Port Error] Port ${PORT} is already in use by another process.`);
+    console.error(`👉 Run 'npx kill-port ${PORT}' or set a different PORT in backend/.env (e.g. PORT=5001).\n`);
+  } else {
+    console.error('[Server Error]:', err);
+  }
 });

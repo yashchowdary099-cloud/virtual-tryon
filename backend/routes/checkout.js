@@ -1,12 +1,13 @@
 // FILE: backend/routes/checkout.js
 const express = require('express');
 const router = express.Router();
+const { optionalAuth } = require('../middleware/verifyAuth');
 
 /**
  * POST /api/checkout
  * Processes order creation, calculates subtotal, GST (18%), shipping, and returns order invoice.
  */
-router.post('/', (req, res) => {
+router.post('/', optionalAuth, (req, res) => {
   try {
     const { items, customer, paymentMethod, upiId } = req.body;
 
@@ -32,13 +33,18 @@ router.post('/', (req, res) => {
       day: 'numeric'
     });
 
+    const authenticatedUserId = req.user ? req.user.id : null;
+    const authenticatedUserEmail = req.user ? req.user.email : null;
+
     const orderReceipt = {
       success: true,
       orderId,
       status: 'CONFIRMED',
       timestamp: new Date().toISOString(),
+      userId: authenticatedUserId,
+      userEmail: authenticatedUserEmail,
       customer: customer || {
-        fullName: 'SFit User',
+        fullName: authenticatedUserEmail ? authenticatedUserEmail.split('@')[0] : 'TrueFit User',
         phone: '+91 98765 43210',
         city: 'Bengaluru',
         pincode: '560001'
@@ -71,10 +77,10 @@ router.post('/', (req, res) => {
       deliveryEstimate: estimatedDelivery
     };
 
-    console.log(`[SFit Checkout] Order ${orderId} created successfully. Total: ₹${totalAmount}`);
+    console.log(`[TrueFit Checkout] Order ${orderId} created for ${authenticatedUserEmail || 'Guest'}. Total: ₹${totalAmount}`);
     res.status(201).json(orderReceipt);
   } catch (error) {
-    console.error('[SFit Checkout Error]:', error);
+    console.error('[TrueFit Checkout Error]:', error);
     res.status(500).json({ success: false, message: 'Checkout failed to process order' });
   }
 });

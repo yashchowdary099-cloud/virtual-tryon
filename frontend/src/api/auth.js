@@ -1,51 +1,11 @@
 // FILE: frontend/src/api/auth.js
 
-const API_BASE_URL = 'http://localhost:5000/api/auth';
-
 /**
- * Sends a 6-digit verification OTP to the specified email address via Resend.
+ * NOTE: Legacy Resend OTP authentication API calls have been removed.
+ * Authentication is now handled directly by @supabase/supabase-js in AuthContext and Login.jsx using:
+ * - supabase.auth.signUp()
+ * - supabase.auth.signInWithPassword()
+ * - supabase.auth.signOut()
  */
-export async function sendOtp(email) {
-  try {
-    const response = await fetch(`${API_BASE_URL}/send-otp`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ email })
-    });
 
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('API Error sendOtp:', error);
-    return {
-      success: false,
-      message: 'Failed to connect to the authentication server. Please check your network connection.'
-    };
-  }
-}
-
-/**
- * Verifies the 6-digit OTP code for the user's email address.
- */
-export async function verifyOtp(email, otp) {
-  try {
-    const response = await fetch(`${API_BASE_URL}/verify-otp`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ email, otp })
-    });
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('API Error verifyOtp:', error);
-    return {
-      success: false,
-      message: 'Failed to connect to the verification server.'
-    };
-  }
-}
+export const DEPRECATED_MSG = 'Use Supabase Auth client directly via useAuth() hook.';

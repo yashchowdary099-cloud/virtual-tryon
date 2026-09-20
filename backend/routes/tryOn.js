@@ -5,6 +5,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const sharp = require('sharp');
+const { optionalAuth } = require('../middleware/verifyAuth');
 require('dotenv').config();
 
 // Ensure uploads directory exists
@@ -229,11 +230,13 @@ router.post(
     { name: 'left', maxCount: 1 },
     { name: 'right', maxCount: 1 }
   ]),
+  optionalAuth,
   async (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     try {
       const { productId, preferredSize, userSize, garmentImage, garmentName, category } = req.body;
       const files = req.files || {};
+      const authenticatedUserId = req.user ? req.user.id : null;
 
       const targetSize = userSize || preferredSize || 'L';
       const targetCategory = normalizeCategory(category);
@@ -267,7 +270,7 @@ router.post(
         garmentInput = files.outfit[0].buffer;
       }
 
-      if (!garmentInput || (typeof garmentInput === 'string' && !garmentInput.trim())) {
+      if (!garmentInput || (typeof garmentInput === 'string' && (!garmentInput.trim() || garmentInput.trim() === 'undefined' || garmentInput.trim() === 'null'))) {
         console.warn('[Try-On Validation Error] Garment image is missing.');
         return res.status(400).json({
           success: false,
@@ -291,6 +294,7 @@ router.post(
       return res.status(200).json({
         success: true,
         tryOnId: 'tryon_' + Date.now(),
+        userId: authenticatedUserId,
         timestamp: new Date().toISOString(),
         productId: productId || 'sfit_outfit_1',
         confidenceScore: 98,

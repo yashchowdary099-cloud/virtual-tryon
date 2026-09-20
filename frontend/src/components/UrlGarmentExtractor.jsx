@@ -5,10 +5,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link2, Clipboard, ArrowRight, Loader2, AlertCircle, Sparkles, CheckCircle2, Upload, Shirt, ExternalLink, Tag, ShieldAlert } from 'lucide-react';
 import { extractProductFromUrl } from '../api';
 import { useTryOn } from '../context/TryOnContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function UrlGarmentExtractor({ onProceed }) {
   const navigate = useNavigate();
   const { selectProductForTryOn, capturedImages } = useTryOn();
+  const { user } = useAuth();
   const fileInputRef = useRef(null);
 
   const [inputUrl, setInputUrl] = useState('');
@@ -146,6 +148,11 @@ export default function UrlGarmentExtractor({ onProceed }) {
   const handleProceedToTryOn = () => {
     if (!extractedProduct) return;
     selectProductForTryOn(extractedProduct);
+
+    if (!user) {
+      navigate('/login', { state: { from: '/capture', product: extractedProduct } });
+      return;
+    }
 
     if (onProceed) {
       onProceed(extractedProduct);

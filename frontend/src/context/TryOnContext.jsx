@@ -1,4 +1,3 @@
-// FILE: frontend/src/context/TryOnContext.jsx
 import React, { createContext, useContext, useState } from 'react';
 
 const TryOnContext = createContext(null);
@@ -6,7 +5,8 @@ const TryOnContext = createContext(null);
 export function TryOnProvider({ children }) {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [capturedImages, setCapturedImages] = useState({
-    front: null
+    front: null,
+    userId: null
   });
 
   const [userMeasurements, setUserMeasurements] = useState({
@@ -15,36 +15,62 @@ export function TryOnProvider({ children }) {
     waistCm: 92,
     heightCm: 178,
     weightKg: 76,
-    userSize: 'L'
+    userSize: 'L',
+    userId: null
   });
 
   const [tryOnResult, setTryOnResult] = useState(null);
+  const [resultCache, setResultCache] = useState({}); // Local cache for exact person+garment combos
   const [cart, setCart] = useState([]);
   const [activeStep, setActiveStep] = useState(1);
 
   const selectProductForTryOn = (product) => {
     setSelectedProduct(product);
-    setTryOnResult(null);
   };
 
-  const updateCapturedAngle = (angleKey, imageSrc) => {
+  const updateCapturedAngle = (angleKey, imageSrc, userId = null) => {
     setCapturedImages((prev) => ({
       ...prev,
-      [angleKey]: imageSrc
+      [angleKey]: imageSrc,
+      userId: userId || prev.userId
     }));
   };
 
-  const updateUserMeasurements = (newMeasurements) => {
+  const updateUserMeasurements = (newMeasurements, userId = null) => {
     setUserMeasurements((prev) => ({
       ...prev,
-      ...newMeasurements
+      ...newMeasurements,
+      userId: userId || prev.userId
     }));
+  };
+
+  const tagCapturedDataWithUser = (userId) => {
+    if (!userId) return;
+    setCapturedImages((prev) => ({ ...prev, userId }));
+    setUserMeasurements((prev) => ({ ...prev, userId }));
+    setTryOnResult((prev) => (prev ? { ...prev, userId } : null));
   };
 
   const clearCapturedImages = () => {
     setCapturedImages({
-      front: null
+      front: null,
+      userId: null
     });
+  };
+
+  /**
+   * Helper to retrieve or store cached try-on output
+   */
+  const getCachedTryOnResult = (personSrc, garmentSrc) => {
+    if (!personSrc || !garmentSrc) return null;
+    const key = `${personSrc.length}_${garmentSrc}`;
+    return resultCache[key] || null;
+  };
+
+  const setCachedTryOnResult = (personSrc, garmentSrc, result) => {
+    if (!personSrc || !garmentSrc || !result) return;
+    const key = `${personSrc.length}_${garmentSrc}`;
+    setResultCache((prev) => ({ ...prev, [key]: result }));
   };
 
   const addToCart = (product, selectedSize = 'L') => {
@@ -90,8 +116,11 @@ export function TryOnProvider({ children }) {
         clearCapturedImages,
         userMeasurements,
         updateUserMeasurements,
+        tagCapturedDataWithUser,
         tryOnResult,
         setTryOnResult,
+        getCachedTryOnResult,
+        setCachedTryOnResult,
         cart,
         addToCart,
         removeFromCart,

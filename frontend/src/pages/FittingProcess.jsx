@@ -2,21 +2,22 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Cpu, CheckCircle2, Loader2, Sparkles, AlertCircle, RefreshCw, ArrowLeft, Key } from 'lucide-react';
+import { Cpu, CheckCircle2, Loader2, Sparkles, AlertCircle, RefreshCw, ArrowLeft, Key, ShoppingBag } from 'lucide-react';
 import ProgressStepper from '../components/ProgressStepper';
 import { useTryOn } from '../context/TryOnContext';
 import { processTryOn } from '../api';
 
 export default function FittingProcess() {
   const navigate = useNavigate();
-  const { selectedProduct, capturedImages, userMeasurements, setTryOnResult, setActiveStep } = useTryOn();
+  const { selectedProduct, capturedImages, userMeasurements, setTryOnResult, getCachedTryOnResult, setCachedTryOnResult, setActiveStep } = useTryOn();
 
   const [currentStage, setCurrentStage] = useState(0);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const stages = [
-    { title: 'Uploading Posture & Garment Assets', desc: 'Sending front posture photo and garment image to backend API' },
-    { title: 'Replicate IDM-VTON Model Initialized', desc: 'Creating AI prediction worker on Nvidia GPU compute node' },
+    { title: 'Validating Posture & Garment Assets', desc: 'Verifying user photo and garment image input parameters' },
+    { title: 'Replicate / HuggingFace Model Initialized', desc: 'Connecting GPU compute node for neural draping' },
     { title: 'Photorealistic AI Diffusion & Draping', desc: 'Synthesizing fabric transfer, lighting gradients & body alignment (~15–30s)' },
     { title: 'Rendering Final Composited Output', desc: 'Finalizing high-resolution try-on result and verifying size match' }
   ];
@@ -40,8 +41,38 @@ export default function FittingProcess() {
   };
 
   const executeTryOnPipeline = async () => {
+    if (isProcessing) return; // Prevent duplicate concurrent executions
+
     setErrorMessage(null);
     setCurrentStage(0);
+
+    // 1. LOCAL VALIDATION BEFORE API CALL
+    const personImageSrc = capturedImages?.front;
+    const garmentImageSrc = selectedProduct?.overlayImage || selectedProduct?.image;
+
+    if (!personImageSrc) {
+      setErrorMessage('User photo is missing. Please capture your front-facing photo first.');
+      return;
+    }
+
+    if (!garmentImageSrc) {
+      setErrorMessage('Garment image is missing. Please select or paste a valid garment product link.');
+      return;
+    }
+
+    // 2. CHECK LOCAL RESULT CACHE TO REDUCE API USAGE
+    const cachedResult = getCachedTryOnResult(personImageSrc, garmentImageSrc);
+    if (cachedResult) {
+      console.log('[Try-On Optimization] Reusing existing cached try-on result for identical input combination.');
+      setCurrentStage(stages.length - 1);
+      setTryOnResult(cachedResult);
+      setTimeout(() => {
+        navigate('/result');
+      }, 400);
+      return;
+    }
+
+    setIsProcessing(true);
 
     const timer = setInterval(() => {
       setCurrentStage((prev) => {
@@ -55,35 +86,35 @@ export default function FittingProcess() {
       const targetSize = userMeasurements?.userSize || 'L';
 
       const payload = {
-        productId: selectedProduct?.id || 'myntra_men_1',
+        productId: selectedProduct?.id || 'sfit_outfit_1',
         preferredSize: targetSize,
-        garmentImage: selectedProduct?.overlayImage || selectedProduct?.image,
+        garmentImage: garmentImageSrc,
         garmentName: selectedProduct?.name || 'Casual Shirt',
-        category: selectedProduct?.category || 'upper_body',
-        front: dataURLtoBlob(capturedImages.front),
-        back: dataURLtoBlob(capturedImages.back),
-        left: dataURLtoBlob(capturedImages.left),
-        right: dataURLtoBlob(capturedImages.right)
+        category: selectedProduct?.category || selectedProduct?.garmentType || 'upper_body',
+        front: dataURLtoBlob(personImageSrc)
       };
 
       const result = await processTryOn(payload);
 
       clearInterval(timer);
+      setIsProcessing(false);
 
       if (result && result.success && result.angles && result.angles.front && result.angles.front.url) {
         setCurrentStage(stages.length - 1);
+        setCachedTryOnResult(personImageSrc, garmentImageSrc, result);
         setTryOnResult(result);
         setTimeout(() => {
           navigate('/result');
-        }, 800);
+        }, 600);
       } else {
-        throw new Error(result?.message || 'Replicate IDM-VTON model returned no output image URL');
+        throw new Error(result?.details || result?.error || result?.message || 'Virtual try-on model returned no output image URL');
       }
 
     } catch (err) {
       clearInterval(timer);
+      setIsProcessing(false);
       console.error('Fitting Pipeline Error:', err);
-      setErrorMessage(err.message || 'Virtual try-on generation failed. Please check your Replicate API key.');
+      setErrorMessage(err.message || 'Virtual try-on generation failed. Please try again.');
     }
   };
 
@@ -108,15 +139,15 @@ export default function FittingProcess() {
 
         <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#F4EFE6] border border-[#E8E2D5] text-[#8C6D3F] text-xs font-extrabold uppercase tracking-widest mb-3">
           <Sparkles className="w-3.5 h-3.5 text-[#C59B27]" />
-          Replicate IDM-VTON Neural Fitting
+          TrueFit AI Neural Fitting
         </span>
 
         <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#1A1817] tracking-tight mb-2">
-          {errorMessage ? 'Try-On Generation Notice' : 'Generating Neural Virtual Try-On'}
+          {errorMessage ? 'Try-On Processing Notice' : 'Generating Neural Virtual Try-On'}
         </h2>
         
         <p className="text-[#6E675F] text-xs sm:text-sm max-w-md mx-auto mb-8 font-medium">
-          {errorMessage ? 'The AI model could not process your garment transfer request.' : 'Draping photorealistic fabric transfer onto your body pose (~15–30s)...'}
+          {errorMessage ? 'Please verify inputs before retrying generation.' : 'Draping photorealistic fabric transfer onto your body pose (~15–30s)...'}
         </p>
 
         {/* ERROR DISPLAY BOX */}
@@ -124,36 +155,33 @@ export default function FittingProcess() {
           <div className="max-w-lg mx-auto p-6 rounded-2xl bg-[#FFF8F6] border border-[#F5C2B8] text-left space-y-4 shadow-sm">
             <div className="flex items-center gap-3 text-[#B85C38] font-bold text-sm">
               <AlertCircle className="w-5 h-5 shrink-0" />
-              <span>Replicate API Status Notice</span>
+              <span>Input Validation & AI Status</span>
             </div>
 
             <div className="p-3.5 rounded-xl bg-white border border-[#F5C2B8] text-xs font-mono text-[#B85C38] leading-relaxed break-words">
               {errorMessage}
             </div>
 
-            <div className="text-xs text-[#57524A] space-y-1">
-              <p className="font-bold flex items-center gap-1.5 text-[#1A1817]">
-                <Key className="w-4 h-4 text-[#8C6D3F]" /> Setup Instructions:
-              </p>
-              <ol className="list-decimal list-inside space-y-1 pl-1 text-[11px]">
-                <li>Get an API token from <a href="https://replicate.com/account/api-tokens" target="_blank" rel="noreferrer" className="text-[#8C6D3F] underline font-bold">replicate.com/account/api-tokens</a></li>
-                <li>Add it in <code className="bg-[#FAF7F2] px-1 py-0.5 rounded text-[#1A1817]">backend/.env</code> as: <code className="bg-[#FAF7F2] px-1 py-0.5 rounded text-[#8C6D3F]">REPLICATE_API_TOKEN=r8_...</code></li>
-                <li>Restart backend server: <code className="bg-[#FAF7F2] px-1 py-0.5 rounded text-[#1A1817]">cd backend && npm start</code></li>
-              </ol>
-            </div>
-
             <div className="pt-2 flex flex-wrap gap-2">
               <button
                 onClick={executeTryOnPipeline}
-                className="px-4 py-2.5 rounded-full bg-[#1A1817] hover:bg-[#2D2A26] text-white text-xs font-bold flex items-center gap-2 shadow-sm"
+                disabled={isProcessing}
+                className="px-4 py-2.5 rounded-full bg-[#1A1817] hover:bg-[#2D2A26] text-white text-xs font-bold flex items-center gap-2 shadow-sm disabled:opacity-50"
               >
-                <RefreshCw className="w-4 h-4 text-[#C59B27]" /> Retry AI Try-On
+                <RefreshCw className={`w-4 h-4 text-[#C59B27] ${isProcessing ? 'animate-spin' : ''}`} />
+                {isProcessing ? 'Processing...' : 'Retry AI Try-On'}
               </button>
               <button
                 onClick={() => navigate('/capture')}
                 className="px-4 py-2.5 rounded-full bg-[#FAF7F2] hover:bg-[#F4EFE6] text-[#1A1817] border border-[#E8E2D5] text-xs font-bold flex items-center gap-2"
               >
                 <ArrowLeft className="w-4 h-4" /> Back to Studio Capture
+              </button>
+              <button
+                onClick={() => navigate('/')}
+                className="px-4 py-2.5 rounded-full bg-[#F4EFE6] hover:bg-[#E8E2D5] text-[#8C6D3F] text-xs font-bold flex items-center gap-2"
+              >
+                <ShoppingBag className="w-4 h-4" /> Select Garment
               </button>
             </div>
           </div>

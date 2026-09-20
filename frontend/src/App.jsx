@@ -1,4 +1,3 @@
-// FILE: frontend/src/App.jsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
@@ -8,6 +7,7 @@ import FittingProcess from './pages/FittingProcess';
 import FitResult from './pages/FitResult';
 import Checkout from './pages/Checkout';
 import Login from './pages/Login';
+import ProtectedRoute from './components/ProtectedRoute';
 import ChatbotWidget from './components/ChatbotWidget';
 import { TryOnProvider } from './context/TryOnContext';
 import { ChatProvider } from './context/ChatContext';
@@ -24,12 +24,43 @@ export default function App() {
               
               <main className="flex-1">
                 <Routes>
+                  {/* Public Routes */}
                   <Route path="/" element={<Catalog />} />
-                  <Route path="/capture" element={<BodyCapture />} />
-                  <Route path="/fitting" element={<FittingProcess />} />
-                  <Route path="/result" element={<FitResult />} />
-                  <Route path="/checkout" element={<Checkout />} />
                   <Route path="/login" element={<Login />} />
+
+                  {/* Protected Routes */}
+                  <Route
+                    path="/capture"
+                    element={
+                      <ProtectedRoute>
+                        <BodyCapture />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/fitting"
+                    element={
+                      <ProtectedRoute>
+                        <FittingProcess />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/result"
+                    element={
+                      <ProtectedRoute>
+                        <FitResult />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/checkout"
+                    element={
+                      <ProtectedRoute>
+                        <Checkout />
+                      </ProtectedRoute>
+                    }
+                  />
                 </Routes>
               </main>
 
@@ -41,9 +72,9 @@ export default function App() {
                 <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="flex items-center gap-2 font-bold text-[#1A1817]">
                     <span className="w-2 h-2 rounded-full bg-[#8C6D3F]" />
-                    <span className="font-serif font-bold text-[#1A1817] text-sm">SFit</span> AI Virtual Garment Fitting Studio
+                    <span className="font-serif font-bold text-[#1A1817] text-sm">TrueFit</span> AI Virtual Garment Fitting Studio
                   </div>
-                  <p>© {new Date().getFullYear()} SFit Virtual Try-On. All rights reserved.</p>
+                  <p>© {new Date().getFullYear()} TrueFit Virtual Try-On. All rights reserved.</p>
                 </div>
               </footer>
             </div>
