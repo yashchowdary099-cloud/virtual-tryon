@@ -12,9 +12,11 @@ export async function getProducts(params = {}) {
   try {
     const query = new URLSearchParams(params).toString();
     const response = await fetch(`${API_BASE_URL}/products?${query}`);
+
     if (!response.ok) {
       throw new Error(`Failed to fetch products: ${response.statusText}`);
     }
+
     return await response.json();
   } catch (error) {
     console.error('API Error (getProducts):', error);
@@ -28,9 +30,11 @@ export async function getProducts(params = {}) {
 export async function getProductById(id) {
   try {
     const response = await fetch(`${API_BASE_URL}/products/${id}`);
+
     if (!response.ok) {
       throw new Error(`Failed to fetch product ${id}: ${response.statusText}`);
     }
+
     return await response.json();
   } catch (error) {
     console.error('API Error (getProductById):', error);
@@ -40,39 +44,61 @@ export async function getProductById(id) {
 
 /**
  * Submit 4 pose images to AI fitting engine backend
- * @param {Object} payload - { front: File/Blob, back: File/Blob, left: File/Blob, right: File/Blob, productId: string, preferredSize: string }
+ * @param {Object} payload
+ * { front: File/Blob, back: File/Blob, left: File/Blob, right: File/Blob,
+ * productId: string, preferredSize: string }
  */
 export async function processTryOn(payload) {
   try {
     const formData = new FormData();
+
     if (payload.front) formData.append('front', payload.front);
     if (payload.back) formData.append('back', payload.back);
     if (payload.left) formData.append('left', payload.left);
     if (payload.right) formData.append('right', payload.right);
     if (payload.productId) formData.append('productId', payload.productId);
-    if (payload.preferredSize) formData.append('preferredSize', payload.preferredSize);
-    if (payload.garmentImage) formData.append('garmentImage', payload.garmentImage);
-    if (payload.garmentName) formData.append('garmentName', payload.garmentName);
-    if (payload.category) formData.append('category', payload.category);
+    if (payload.preferredSize) {
+      formData.append('preferredSize', payload.preferredSize);
+    }
+    if (payload.garmentImage) {
+      formData.append('garmentImage', payload.garmentImage);
+    }
+    if (payload.garmentName) {
+      formData.append('garmentName', payload.garmentName);
+    }
+    if (payload.category) {
+      formData.append('category', payload.category);
+    }
 
-    const response = await fetch(`${API_BASE_URL}/try-on`, {
+    // FIXED: Backend Try-On endpoint includes /api
+    const response = await fetch(`${API_BASE_URL}/api/try-on`, {
       method: 'POST',
       body: formData
     });
 
     const responseText = await response.text();
+
     let data;
+
     try {
       data = responseText ? JSON.parse(responseText) : {};
     } catch (parseErr) {
-      throw new Error(`AI fitting processing failed: Server returned invalid format (${response.status})`);
+      throw new Error(
+        `AI fitting processing failed: Server returned invalid format (${response.status})`
+      );
     }
 
     if (!response.ok || !data.success) {
-      const errorMsg = data.details || data.error || data.message || `AI fitting processing failed (${response.status})`;
+      const errorMsg =
+        data.details ||
+        data.error ||
+        data.message ||
+        `AI fitting processing failed (${response.status})`;
+
       const err = new Error(errorMsg);
       err.stage = data.stage || 'replicate';
       err.details = data.details;
+
       throw err;
     }
 
@@ -98,16 +124,23 @@ export async function extractProductFromUrl(url) {
     });
 
     const responseText = await response.text();
+
     let data;
+
     try {
       data = responseText ? JSON.parse(responseText) : {};
     } catch (parseErr) {
-      throw new Error(`Extraction service returned invalid response format (${response.status}).`);
+      throw new Error(
+        `Extraction service returned invalid response format (${response.status}).`
+      );
     }
 
     if (!response.ok || !data.success) {
-      throw new Error(data.error || `Unable to extract garment image (${response.status}).`);
+      throw new Error(
+        data.error || `Unable to extract garment image (${response.status}).`
+      );
     }
+
     return data;
   } catch (error) {
     console.error('API Error (extractProductFromUrl):', error);
@@ -117,7 +150,8 @@ export async function extractProductFromUrl(url) {
 
 /**
  * Process order checkout with GST and INR payment selection
- * @param {Object} orderData - { items: Array, customer: Object, paymentMethod: string, upiId: string }
+ * @param {Object} orderData
+ * { items: Array, customer: Object, paymentMethod: string, upiId: string }
  */
 export async function processCheckout(orderData) {
   try {
