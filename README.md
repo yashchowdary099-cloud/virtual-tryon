@@ -1,3 +1,8 @@
+## 🌐 Live Demo
+
+🚀 **Try TrueFit AI Virtual Try-On here:**
+
+https://virtual-try-on-liard.vercel.app
 # SFit - AI-Powered 3D Virtual Garment Try-On & Shopping Platform
 
 **SFit** is an AI-powered 3D virtual clothing try-on platform that enables online shoppers to virtually "wear" apparel directly on their own posture photos before buying. It features exact centimeter (CM) body measurements, 4-angle posture try-on results, and an **AI-Powered Shopping Assistant Chatbot**.
